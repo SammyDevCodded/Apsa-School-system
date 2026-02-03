@@ -87,4 +87,4 @@ A comprehensive, web-based School Management System designed to streamline admin
     - Glassmorphism design with distinct styles for Success and Error messages.
 
 ---
-*Developed by the Google Deepmind Codebase Agent.*
+*Developed by APSA SYSTEMS(Sammy k jnr).*
