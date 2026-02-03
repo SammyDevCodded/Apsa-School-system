@@ -1,0 +1,16 @@
+Options +FollowSymLinks
+RewriteEngine On
+
+# Handle requests for the public directory
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /public/$1 [L,QSA]
+
+# Handle the root URL
+RewriteRule ^$ /public/index.php [L]
+
+# Handle all other URLs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /public/index.php [L,QSA]

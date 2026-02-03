@@ -1,0 +1,1916 @@
+<?php 
+// Function to build pagination URLs
+function buildPaginationUrl($page, $perPage, $searchTerm = '', $academicYearId = '', $dateFrom = '', $dateTo = '', $enableDateFilter = false, $reportType = '', $tab = 'payments') {
+    $params = [
+        'page' => $page,
+        'per_page' => $perPage,
+        'tab' => $tab
+    ];
+    
+    if ($searchTerm) {
+        $params['search'] = $searchTerm;
+    }
+    
+    if ($academicYearId) {
+        $params['academic_year_id'] = $academicYearId;
+    }
+    
+    if ($reportType) {
+        $params['report_type'] = $reportType;
+    }
+    
+    if ($enableDateFilter) {
+        $params['enable_date_filter'] = 1;
+        if ($dateFrom) {
+            $params['date_from'] = $dateFrom;
+        }
+        if ($dateTo) {
+            $params['date_to'] = $dateTo;
+        }
+    }
+    
+    return '/finance?' . http_build_query($params);
+}
+$title = 'Finance Records'; 
+ob_start(); 
+?>
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-semibold text-gray-900">Finance Records</h1>
+        </div>
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <a href="<?= buildPaginationUrl(1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                   class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm <?= (isset($tab) && $tab === 'payments') ? 'border-indigo-500 text-indigo-600' : '' ?>">
+                    Payments
+                </a>
+                <a href="<?= buildPaginationUrl(1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, '', 'bills') ?>" 
+                   class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm <?= (isset($tab) && $tab === 'bills') ? 'border-indigo-500 text-indigo-600' : '' ?>">
+                    Bills
+                </a>
+            </nav>
+        </div>
+        <?php if (isset($tab) && $tab === 'bills'): ?>
+            <!-- Bills Tab Content -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <!-- Bills Filters -->
+                    <form method="GET" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                        <input type="hidden" name="tab" value="bills">
+                        <div>
+                            <label for="bills_search" class="block text-sm font-medium text-gray-700">Search</label>
+                            <input type="text" name="search" id="bills_search" value="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                placeholder="Student name or admission no">
+                        </div>
+                        <div>
+                            <label for="class_id" class="block text-sm font-medium text-gray-700">Class</label>
+                            <select name="class_id" id="class_id"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option value="">All Classes</option>
+                                <?php foreach ($classes ?? [] as $class): ?>
+                                    <option value="<?= $class['id'] ?>" <?= (isset($classId) && $classId == $class['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($class['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bills_academic_year_id" class="block text-sm font-medium text-gray-700">Academic Year</label>
+                            <select name="academic_year_id" id="bills_academic_year_id"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option value="">All Academic Years</option>
+                                <?php foreach ($academicYears ?? [] as $year): ?>
+                                    <option value="<?= $year['id'] ?>" <?= (isset($academicYearId) && $academicYearId == $year['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($year['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-6">
+                                Filter
+                            </button>
+                        </div>
+                    </form>
+                    <!-- Bills Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Structure</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Expected</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php if (empty($fees)): ?>
+                                    <tr>
+                                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                            No fee structures found
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($fees as $feeData): 
+                                        $fee = $feeData['fee'];
+                                        ?>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($fee['name']) ?></div>
+                                                <div class="text-sm text-gray-500"><?= htmlspecialchars($fee['display_classes'] ?? 'All Classes') ?></div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ₵<?= number_format($fee['amount'], 2) ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <?= $fee['student_count'] ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ₵<?= number_format($feeData['total_expected'], 2) ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ₵<?= number_format($feeData['total_paid'], 2) ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm <?= $feeData['overall_balance'] > 0 ? 'text-red-600 font-bold' : 'text-green-600' ?>">
+                                                ₵<?= number_format($feeData['overall_balance'], 2) ?>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <button class="view-fee-details text-indigo-600 hover:text-indigo-900" 
+                                                        data-fee-id="<?= $fee['id'] ?>">
+                                                    View Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- Existing Payments Tab Content -->
+            <!-- Filters -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <form method="GET" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <input type="hidden" name="tab" value="payments">
+                        <div>
+                            <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
+                            <input type="text" name="search" id="search" value="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                placeholder="Student name, admission no, or guardian name">
+                        </div>
+                        <div>
+                            <label for="academic_year_id" class="block text-sm font-medium text-gray-700">Academic Year</label>
+                            <select name="academic_year_id" id="academic_year_id"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option value="">All Academic Years</option>
+                                <?php foreach ($academicYears ?? [] as $year): ?>
+                                    <option value="<?= $year['id'] ?>" <?= (isset($academicYearId) && $academicYearId == $year['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($year['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="report_type" class="block text-sm font-medium text-gray-700">Report Type</label>
+                            <select name="report_type" id="report_type"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <option value="daily" <?= (isset($reportType) && $reportType == 'daily') ? 'selected' : '' ?>>Daily</option>
+                                <option value="weekly" <?= (isset($reportType) && $reportType == 'weekly') ? 'selected' : '' ?>>Weekly</option>
+                                <option value="monthly" <?= (isset($reportType) && $reportType == 'monthly') ? 'selected' : '' ?>>Monthly</option>
+                                <option value="termly" <?= (isset($reportType) && $reportType == 'termly') ? 'selected' : '' ?>>Termly</option>
+                                <option value="yearly" <?= (isset($reportType) && $reportType == 'yearly') ? 'selected' : '' ?>>Yearly</option>
+                            </select>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <div class="flex items-end space-x-4">
+                                <div class="flex items-center">
+                                    <input id="enable_date_filter" name="enable_date_filter" type="checkbox" 
+                                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                        <?= isset($enableDateFilter) && $enableDateFilter ? 'checked' : '' ?>>
+                                    <label for="enable_date_filter" class="ml-2 block text-sm text-gray-900">
+                                        Filter by Date
+                                    </label>
+                                </div>
+                                
+                                <div id="date_filter_fields" class="<?= (!isset($enableDateFilter) || !$enableDateFilter) ? 'hidden' : '' ?> flex-1 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="date_from" class="block text-sm font-medium text-gray-700">From</label>
+                                        <input type="date" name="date_from" id="date_from" value="<?= htmlspecialchars($dateFrom ?? '') ?>"
+                                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="date_to" class="block text-sm font-medium text-gray-700">To</label>
+                                        <input type="date" name="date_to" id="date_to" value="<?= htmlspecialchars($dateTo ?? '') ?>"
+                                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <button type="submit"
+                                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Report Summary -->
+            <?php if (isset($reportData) && !empty($reportData)): ?>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-medium text-gray-900">Report Summary - <?= ucfirst($reportType ?? 'Daily') ?></h2>
+                        <?php 
+                        // Calculate total amount for the report
+                        $reportTotal = array_sum(array_column($reportData, 'total_amount'));
+                        ?>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-lg font-bold text-indigo-600">
+                                Total: ₵<?= number_format($reportTotal, 2) ?>
+                            </div>
+                            <div class="flex space-x-2">
+                                <div class="relative inline-block text-left">
+                                    <button id="print-summary-options" class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        Print
+                                        <svg class="-mr-1 ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div id="print-summary-dropdown" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-50">
+                                        <div class="py-1">
+                                            <button id="print-summary-only" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Print Summary Only</button>
+                                            <button id="print-summary-and-fees" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Print Summary and Fees Data</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="relative inline-block text-left">
+                                    <button id="export-summary-options" class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        Export
+                                        <svg class="-mr-1 ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div id="export-summary-dropdown" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-50">
+                                        <div class="py-1">
+                                            <button id="export-summary-only" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export Summary Only</button>
+                                            <button id="export-summary-and-fees" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export Summary and Fees Data</button>
+                                            <button id="export-fees-only" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Export Fees Data Only</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <?php if ($reportType == 'daily'): ?>
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₵)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">Actions</th>
+                                </tr>
+                                <?php elseif ($reportType == 'weekly'): ?>
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₵)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">Actions</th>
+                                </tr>
+                                <?php elseif ($reportType == 'monthly'): ?>
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₵)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">Actions</th>
+                                </tr>
+                                <?php elseif ($reportType == 'termly'): ?>
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₵)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">Actions</th>
+                                </tr>
+                                <?php elseif ($reportType == 'yearly'): ?>
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₵)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">Actions</th>
+                                </tr>
+                                <?php endif; ?>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($reportData as $report): ?>
+                                <tr>
+                                    <?php if ($reportType == 'daily'): ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('M j, Y', strtotime($report['report_date'])) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['transaction_count'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵<?= number_format($report['total_amount'], 2) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
+                                        <button class="view-report-details text-indigo-600 hover:text-indigo-900" 
+                                                data-report-type="daily" 
+                                                data-report-date="<?= $report['report_date'] ?>"
+                                                data-search-term="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                                data-academic-year-id="<?= htmlspecialchars($academicYearId ?? '') ?>">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <?php elseif ($reportType == 'weekly'): ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Week <?= date('W', strtotime($report['start_date'])) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= date('M j', strtotime($report['start_date'])) ?> - <?= date('M j, Y', strtotime($report['end_date'])) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['transaction_count'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵<?= number_format($report['total_amount'], 2) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
+                                        <button class="view-report-details text-indigo-600 hover:text-indigo-900" 
+                                                data-report-type="weekly" 
+                                                data-start-date="<?= $report['start_date'] ?>"
+                                                data-end-date="<?= $report['end_date'] ?>"
+                                                data-search-term="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                                data-academic-year-id="<?= htmlspecialchars($academicYearId ?? '') ?>">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <?php elseif ($reportType == 'monthly'): ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['month_name'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['transaction_count'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵<?= number_format($report['total_amount'], 2) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
+                                        <button class="view-report-details text-indigo-600 hover:text-indigo-900" 
+                                                data-report-type="monthly" 
+                                                data-month="<?= $report['month'] ?>"
+                                                data-search-term="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                                data-academic-year-id="<?= htmlspecialchars($academicYearId ?? '') ?>">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <?php elseif ($reportType == 'termly'): ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['academic_year_name'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['term'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['transaction_count'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵<?= number_format($report['total_amount'], 2) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
+                                        <button class="view-report-details text-indigo-600 hover:text-indigo-900" 
+                                                data-report-type="termly" 
+                                                data-academic-year-id="<?= $report['academic_year_id'] ?>"
+                                                data-term="<?= $report['term'] ?>"
+                                                data-search-term="<?= htmlspecialchars($searchTerm ?? '') ?>">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <?php elseif ($reportType == 'yearly'): ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['year'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $report['transaction_count'] ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵<?= number_format($report['total_amount'], 2) ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
+                                        <button class="view-report-details text-indigo-600 hover:text-indigo-900" 
+                                                data-report-type="yearly" 
+                                                data-year="<?= $report['year'] ?>"
+                                                data-search-term="<?= htmlspecialchars($searchTerm ?? '') ?>"
+                                                data-academic-year-id="<?= htmlspecialchars($academicYearId ?? '') ?>">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <?php endif; ?>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Student/Class Details Table -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mt-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Student & Class Financial Overview</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Sample data - this would be populated dynamically -->
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">John Doe</div>
+                                        <div class="text-sm text-gray-500">STU001</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Class 1A</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵1,500.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵1,200.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">₵300.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="view-student-details text-indigo-600 hover:text-indigo-900" 
+                                                data-student-id="1">
+                                            View Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">Jane Smith</div>
+                                        <div class="text-sm text-gray-500">STU002</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Class 2B</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵2,000.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵2,000.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">₵0.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="view-student-details text-indigo-600 hover:text-indigo-900" 
+                                                data-student-id="2">
+                                            View Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <!-- Existing Payments Tab Content -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex flex-col">
+                        <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                            <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                                <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Student
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Amount
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Method
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Date
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Academic Year/Term
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Fee
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Remarks
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            <?php if (empty($payments)): ?>
+                                                <tr>
+                                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                                        No payments found
+                                                    </td>
+                                                </tr>
+                                            <?php else: ?>
+                                                <?php foreach ($payments as $payment): ?>
+                                                    <tr>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="text-sm font-medium text-gray-900">
+                                                                <?= htmlspecialchars($payment['first_name'] ?? $payment['student_name'] ?? '') ?> <?= htmlspecialchars($payment['last_name'] ?? '') ?>
+                                                            </div>
+                                                            <div class="text-sm text-gray-500">
+                                                                <?= htmlspecialchars($payment['admission_no'] ?? '') ?>
+                                                            </div>
+                                                            <?php if (!empty($payment['guardian_name'])): ?>
+                                                            <div class="text-xs text-gray-400">
+                                                                Guardian: <?= htmlspecialchars($payment['guardian_name'] ?? '') ?>
+                                                            </div>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            ₵<?= number_format($payment['amount'] ?? 0, 2) ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <?php
+                                                            $methodLabels = [
+                                                                'cash' => 'Cash',
+                                                                'cheque' => 'Cheque',
+                                                                'bank_transfer' => 'Bank Transfer',
+                                                                'mobile_money' => 'Mobile Money',
+                                                                'other' => 'Other'
+                                                            ];
+                                                            $method = $payment['method'] ?? 'other';
+                                                            $methodLabel = $methodLabels[$method] ?? ucfirst(str_replace('_', ' ', $method));
+                                                            ?>
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                <?= htmlspecialchars($methodLabel) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <?= date('M j, Y', strtotime($payment['date'] ?? '')) ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <?= htmlspecialchars($payment['academic_year_name'] ?? 'N/A') ?>
+                                                            <?php if (!empty($payment['term'])): ?>
+                                                                <br><span class="text-xs text-gray-400">(<?= htmlspecialchars($payment['term']) ?>)</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <?= htmlspecialchars($payment['fee_name'] ?? 'N/A') ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                                            <?= htmlspecialchars($payment['remarks'] ?? '') ?>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium actions-column">
+                                                            <a href="/receipts/<?= $payment['id'] ?>" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                                                Receipt
+                                                            </a>
+                                                            <button class="view-payment-btn text-indigo-600 hover:text-indigo-900 mr-3" data-payment-id="<?= $payment['id'] ?>">
+                                                                View
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <?php if (!empty($payments)): ?>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-700">
+                                Showing <?= count($payments) ?> of <?= $pagination['total'] ?? 0 ?> payments
+                            </p>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <!-- Pagination -->
+                    <?php if (isset($pagination) && $pagination['total_pages'] > 1): ?>
+                        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                            <div class="flex-1 flex justify-between sm:hidden">
+                                <?php if ($pagination['current_page'] > 1): ?>
+                                    <a href="<?= buildPaginationUrl($pagination['current_page'] - 1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        Previous
+                                    </a>
+                                <?php endif; ?>
+                                
+                                <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
+                                    <a href="<?= buildPaginationUrl($pagination['current_page'] + 1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                       class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        Next
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700">
+                                        Showing
+                                        <span class="font-medium"><?= (($pagination['current_page'] - 1) * $pagination['per_page']) + 1 ?></span>
+                                        to
+                                        <span class="font-medium"><?= min($pagination['current_page'] * $pagination['per_page'], $pagination['total']) ?></span>
+                                        of
+                                        <span class="font-medium"><?= $pagination['total'] ?></span>
+                                        results
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        <?php if ($pagination['current_page'] > 1): ?>
+                                            <a href="<?= buildPaginationUrl(1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span>First</span>
+                                            </a>
+                                            <a href="<?= buildPaginationUrl($pagination['current_page'] - 1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                               class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">Previous</span>
+                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </a>
+                                        <?php endif; ?>
+                                        
+                                        <?php 
+                                        // Calculate start and end page numbers to display
+                                        $startPage = max(1, $pagination['current_page'] - 2);
+                                        $endPage = min($pagination['total_pages'], $pagination['current_page'] + 2);
+                                        
+                                        // Adjust if at the beginning or end
+                                        if ($startPage === 1) {
+                                            $endPage = min(5, $pagination['total_pages']);
+                                        } elseif ($endPage === $pagination['total_pages']) {
+                                            $startPage = max(1, $pagination['total_pages'] - 4);
+                                        }
+                                        
+                                        for ($i = $startPage; $i <= $endPage; $i++): ?>
+                                            <a href="<?= buildPaginationUrl($i, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                               class="relative inline-flex items-center px-4 py-2 border <?= $i == $pagination['current_page'] ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50' ?> text-sm font-medium">
+                                                <?= $i ?>
+                                            </a>
+                                        <?php endfor; ?>
+                                        
+                                        <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
+                                            <a href="<?= buildPaginationUrl($pagination['current_page'] + 1, $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                               class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">Next</span>
+                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                </svg>
+                                            </a>
+                                            <a href="<?= buildPaginationUrl($pagination['total_pages'], $perPage ?? 10, $searchTerm ?? '', $academicYearId ?? '', $dateFrom ?? '', $dateTo ?? '', $enableDateFilter ?? false, $reportType ?? '', 'payments') ?>" 
+                                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span>Last</span>
+                                            </a>
+                                        <?php endif; ?>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+<!-- Report Details Modal -->
+<div id="report-details-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Transaction Details</h3>
+                <div class="flex items-center space-x-2">
+                    <button id="print-report-btn" class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                        </svg>
+                        Print
+                    </button>
+                    <button id="export-report-btn" class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Export
+                    </button>
+                    <button id="close-report-modal-btn" class="text-gray-400 hover:text-gray-500">
+                        <span class="text-2xl">&times;</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="report-details-content" class="mt-4">
+                <!-- Report details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Fee Details Modal -->
+<div id="fee-details-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Fee Details</h3>
+                <button id="close-fee-modal-btn" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <div id="fee-details-content" class="mt-4">
+                <!-- Fee details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Student Details Modal -->
+<div id="student-details-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Student Financial Details</h3>
+                <button id="close-student-modal-btn" class="text-gray-400 hover:text-gray-500">
+                    <span class="text-2xl">&times;</span>
+                </button>
+            </div>
+            
+            <div id="student-details-content" class="mt-4">
+                <!-- Student details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+@media print {
+    /* Hide the Actions columns when printing */
+    .actions-column {
+        display: none !important;
+    }
+    
+    /* Hide the dropdown buttons and other interactive elements when printing */
+    .no-print {
+        display: none !important;
+    }
+    
+    /* Ensure tables expand to full width when printing */
+    table {
+        width: 100% !important;
+        table-layout: fixed;
+    }
+    
+    /* Remove background colors for better printing */
+    th {
+        background-color: transparent !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    /* Ensure proper spacing for printed content */
+    body {
+        margin: 0;
+        padding: 20px;
+    }
+    
+    /* Hide tabs when printing */
+    .border-b {
+        display: none !important;
+    }
+}
+</style>
+<script>
+// Handle View Payment button clicks
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-payment-btn') || e.target.closest('.view-payment-btn')) {
+        const button = e.target.classList.contains('view-payment-btn') ? e.target : e.target.closest('.view-payment-btn');
+        const paymentId = button.getAttribute('data-payment-id');
+        
+        // Redirect to payment details page
+        window.location.href = '/payments/' + paymentId;
+    }
+});
+// Handle View Report Details button clicks
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-report-details') || e.target.closest('.view-report-details')) {
+        const button = e.target.classList.contains('view-report-details') ? e.target : e.target.closest('.view-report-details');
+        const reportType = button.getAttribute('data-report-type');
+        
+        // Show loading state
+        const modal = document.getElementById('report-details-modal');
+        const content = document.getElementById('report-details-content');
+        content.innerHTML = '<p>Loading report details...</p>';
+        modal.classList.remove('hidden');
+        
+        // Prepare data for AJAX request
+        const formData = new FormData();
+        formData.append('report_type', reportType);
+        formData.append('search_term', button.getAttribute('data-search-term') || '');
+        formData.append('academic_year_id', button.getAttribute('data-academic-year-id') || '');
+        
+        // Add specific report parameters
+        if (reportType === 'daily') {
+            formData.append('report_date', button.getAttribute('data-report-date'));
+        } else if (reportType === 'weekly') {
+            formData.append('start_date', button.getAttribute('data-start-date'));
+            formData.append('end_date', button.getAttribute('data-end-date'));
+        } else if (reportType === 'monthly') {
+            formData.append('month', button.getAttribute('data-month'));
+        } else if (reportType === 'termly') {
+            formData.append('academic_year_id', button.getAttribute('data-academic-year-id'));
+            formData.append('term', button.getAttribute('data-term'));
+        } else if (reportType === 'yearly') {
+            formData.append('year', button.getAttribute('data-year'));
+        }
+        
+        // Fetch report details via AJAX
+        fetch('/finance/report-details', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.payments) {
+                // Generate HTML for the payments table
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="report-details-table">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                let totalAmount = 0;
+                
+                data.payments.forEach(payment => {
+                    totalAmount += parseFloat(payment.amount) || 0;
+                    
+                    const methodLabels = {
+                        'cash': 'Cash',
+                        'cheque': 'Cheque',
+                        'bank_transfer': 'Bank Transfer',
+                        'mobile_money': 'Mobile Money',
+                        'other': 'Other'
+                    };
+                    const method = payment.method || 'other';
+                    const methodLabel = methodLabels[method] || method.replace('_', ' ').toUpperCase();
+                    
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${payment.first_name || ''} ${payment.last_name || ''}</div>
+                                <div class="text-sm text-gray-500">${payment.admission_no || ''}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(payment.amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    ${methodLabel}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(payment.date).toLocaleDateString()}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${payment.fee_name || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td colspan="1" class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalAmount.toFixed(2)}</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+                
+                // Store data for export
+                document.getElementById('export-report-btn').setAttribute('data-payments', JSON.stringify(data.payments));
+                document.getElementById('print-report-btn').setAttribute('data-payments', JSON.stringify(data.payments));
+            } else {
+                content.innerHTML = '<p class="text-red-500">Failed to load report details.</p>';
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-500">Error loading report details.</p>';
+        });
+    }
+});
+// Handle Close Report Modal button click
+document.getElementById('close-report-modal-btn').addEventListener('click', function() {
+    document.getElementById('report-details-modal').classList.add('hidden');
+});
+// Handle Export Report button click
+document.getElementById('export-report-btn').addEventListener('click', function() {
+    const paymentsData = JSON.parse(this.getAttribute('data-payments') || '[]');
+    
+    if (paymentsData.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    // Create CSV content
+    let csvContent = 'Student Name,Admission No,Amount,Method,Date,Fee Name\n';
+    
+    paymentsData.forEach(payment => {
+        const methodLabels = {
+            'cash': 'Cash',
+            'cheque': 'Cheque',
+            'bank_transfer': 'Bank Transfer',
+            'mobile_money': 'Mobile Money',
+            'other': 'Other'
+        };
+        const method = payment.method || 'other';
+        const methodLabel = methodLabels[method] || method.replace('_', ' ').toUpperCase();
+        
+        csvContent += `"${(payment.first_name || '') + ' ' + (payment.last_name || '')}",`;
+        csvContent += `"${payment.admission_no || ''}",`;
+        csvContent += `"${payment.amount || 0}",`;
+        csvContent += `"${methodLabel}",`;
+        csvContent += `"${new Date(payment.date).toLocaleDateString()}",`;
+        csvContent += `"${payment.fee_name || 'N/A'}"\n`;
+    });
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'transaction_details.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+// Handle Print Report button click
+document.getElementById('print-report-btn').addEventListener('click', function() {
+    const paymentsData = JSON.parse(this.getAttribute('data-payments') || '[]');
+    
+    if (paymentsData.length === 0) {
+        alert('No data to print');
+        return;
+    }
+    
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Transaction Details</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    tfoot td { font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <h2>Transaction Details</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Admission No</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Date</th>
+                            <th>Fee Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `);
+    
+    let totalAmount = 0;
+    
+    paymentsData.forEach(payment => {
+        totalAmount += parseFloat(payment.amount) || 0;
+        
+        const methodLabels = {
+            'cash': 'Cash',
+            'cheque': 'Cheque',
+            'bank_transfer': 'Bank Transfer',
+            'mobile_money': 'Mobile Money',
+            'other': 'Other'
+        };
+        const method = payment.method || 'other';
+        const methodLabel = methodLabels[method] || method.replace('_', ' ').toUpperCase();
+        
+        printWindow.document.write(`
+            <tr>
+                <td>${(payment.first_name || '') + ' ' + (payment.last_name || '')}</td>
+                <td>${payment.admission_no || ''}</td>
+                <td>₵${parseFloat(payment.amount || 0).toFixed(2)}</td>
+                <td>${methodLabel}</td>
+                <td>${new Date(payment.date).toLocaleDateString()}</td>
+                <td>${payment.fee_name || 'N/A'}</td>
+            </tr>
+        `);
+    });
+    
+    printWindow.document.write(`
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total</strong></td>
+                            <td><strong>₵${totalAmount.toFixed(2)}</strong></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+});
+// Handle View Fee Details button clicks (for Bills tab)
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-fee-details') || e.target.closest('.view-fee-details')) {
+        const button = e.target.classList.contains('view-fee-details') ? e.target : e.target.closest('.view-fee-details');
+        const feeId = button.getAttribute('data-fee-id');
+        
+        // Show loading state
+        const modal = document.getElementById('fee-details-modal');
+        const content = document.getElementById('fee-details-content');
+        content.innerHTML = '<p>Loading fee details...</p>';
+        modal.classList.remove('hidden');
+        
+        // Fetch fee details via AJAX
+        fetch(`/finance/fee-details/${feeId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.students) {
+                // Generate HTML for the students table
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                let totalExpected = 0;
+                let totalPaid = 0;
+                let totalBalance = 0;
+                
+                data.students.forEach(student => {
+                    totalExpected += parseFloat(student.fee_amount) || 0;
+                    totalPaid += parseFloat(student.total_paid) || 0;
+                    totalBalance += parseFloat(student.balance) || 0;
+                    
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${student.first_name || ''} ${student.last_name || ''}</div>
+                                <div class="text-sm text-gray-500">${student.admission_no || ''}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.fee_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.total_paid || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${student.balance > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                ₵${parseFloat(student.balance || 0).toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalExpected.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalPaid.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}">₵${totalBalance.toFixed(2)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = '<p class="text-red-500">Failed to load fee details.</p>';
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-500">Error loading fee details.</p>';
+        });
+    }
+});
+
+// Handle Close Fee Modal button click
+document.getElementById('close-fee-modal-btn').addEventListener('click', function() {
+    document.getElementById('fee-details-modal').classList.add('hidden');
+});
+
+// Handle View Student Details button clicks
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-student-details') || e.target.closest('.view-student-details')) {
+        const button = e.target.classList.contains('view-student-details') ? e.target : e.target.closest('.view-student-details');
+        const studentId = button.getAttribute('data-student-id');
+        
+        // Show loading state
+        const modal = document.getElementById('student-details-modal');
+        const content = document.getElementById('student-details-content');
+        content.innerHTML = '<p>Loading student details...</p>';
+        modal.classList.remove('hidden');
+        
+        // Fetch student details via AJAX
+        fetch(`/finance/student-details/${studentId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.student) {
+                // Generate HTML for the student details
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Structure</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                let totalExpected = 0;
+                let totalPaid = 0;
+                let totalBalance = 0;
+                
+                data.student.fees.forEach(fee => {
+                    totalExpected += parseFloat(fee.expected_amount) || 0;
+                    totalPaid += parseFloat(fee.paid_amount) || 0;
+                    totalBalance += parseFloat(fee.balance) || 0;
+                    
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${fee.fee_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(fee.expected_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(fee.paid_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${fee.balance > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                ₵${parseFloat(fee.balance || 0).toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalExpected.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalPaid.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}">₵${totalBalance.toFixed(2)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = '<p class="text-red-500">Failed to load student details.</p>';
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-500">Error loading student details.</p>';
+        });
+    }
+});
+
+// Handle Close Student Modal button click
+document.getElementById('close-student-modal-btn').addEventListener('click', function() {
+    document.getElementById('student-details-modal').classList.add('hidden');
+});
+
+// Handle print summary dropdown
+const printSummaryOptions = document.getElementById('print-summary-options');
+const printSummaryDropdown = document.getElementById('print-summary-dropdown');
+if (printSummaryOptions) {
+    printSummaryOptions.addEventListener('click', function(e) {
+        e.stopPropagation();
+        printSummaryDropdown.classList.toggle('hidden');
+    });
+}
+// Handle export summary dropdown
+const exportSummaryOptions = document.getElementById('export-summary-options');
+const exportSummaryDropdown = document.getElementById('export-summary-dropdown');
+if (exportSummaryOptions) {
+    exportSummaryOptions.addEventListener('click', function(e) {
+        e.stopPropagation();
+        exportSummaryDropdown.classList.toggle('hidden');
+    });
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (printSummaryDropdown && !printSummaryDropdown.contains(e.target) && !printSummaryOptions.contains(e.target)) {
+        printSummaryDropdown.classList.add('hidden');
+    }
+    
+    if (exportSummaryDropdown && !exportSummaryDropdown.contains(e.target) && !exportSummaryOptions.contains(e.target)) {
+        exportSummaryDropdown.classList.add('hidden');
+    }
+});
+// Handle print summary only
+const printSummaryOnly = document.getElementById('print-summary-only');
+if (printSummaryOnly) {
+    printSummaryOnly.addEventListener('click', function() {
+        printSummaryOnlyFunction();
+        printSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle print summary and fees
+const printSummaryAndFees = document.getElementById('print-summary-and-fees');
+if (printSummaryAndFees) {
+    printSummaryAndFees.addEventListener('click', function() {
+        printSummaryAndFeesFunction();
+        printSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export summary only
+const exportSummaryOnly = document.getElementById('export-summary-only');
+if (exportSummaryOnly) {
+    exportSummaryOnly.addEventListener('click', function() {
+        exportSummaryOnlyFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export summary and fees
+const exportSummaryAndFees = document.getElementById('export-summary-and-fees');
+if (exportSummaryAndFees) {
+    exportSummaryAndFees.addEventListener('click', function() {
+        exportSummaryAndFeesFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export fees only
+const exportFeesOnly = document.getElementById('export-fees-only');
+if (exportFeesOnly) {
+    exportFeesOnly.addEventListener('click', function() {
+        exportFeesOnlyFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+}
+// Print summary only function
+function printSummaryOnlyFunction() {
+    // Get the report summary table
+    const reportTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 table');
+    const reportTitle = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 h2').textContent;
+    const reportTotal = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 .text-lg.font-bold.text-indigo-600').textContent;
+    if (!reportTable) {
+        alert('No report summary to print');
+        return;
+    }
+    // Clone the table to avoid modifying the original
+    const clonedTable = reportTable.cloneNode(true);
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+                    </tfoot>
+                </table>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+});
+// Handle View Fee Details button clicks (for Bills tab)
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-fee-details') || e.target.closest('.view-fee-details')) {
+        const button = e.target.classList.contains('view-fee-details') ? e.target : e.target.closest('.view-fee-details');
+        const feeId = button.getAttribute('data-fee-id');
+        
+        // Show loading state
+        const modal = document.getElementById('fee-details-modal');
+        const content = document.getElementById('fee-details-content');
+        content.innerHTML = '<p>Loading fee details...</p>';
+        modal.classList.remove('hidden');
+        
+        // Fetch fee details via AJAX
+        fetch(`/finance/fee-details/${feeId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.students) {
+                // Generate HTML for the students table
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                let totalExpected = 0;
+                let totalPaid = 0;
+                let totalBalance = 0;
+                
+                data.students.forEach(student => {
+                    totalExpected += parseFloat(student.fee_amount) || 0;
+                    totalPaid += parseFloat(student.total_paid) || 0;
+                    totalBalance += parseFloat(student.balance) || 0;
+                    
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">${student.first_name || ''} ${student.last_name || ''}</div>
+                                <div class="text-sm text-gray-500">${student.admission_no || ''}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.fee_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.total_paid || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${student.balance > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                ₵${parseFloat(student.balance || 0).toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalExpected.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalPaid.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}">₵${totalBalance.toFixed(2)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = '<p class="text-red-500">Failed to load fee details.</p>';
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-500">Error loading fee details.</p>';
+        });
+    }
+});
+// Handle Close Fee Modal button click
+document.getElementById('close-fee-modal-btn').addEventListener('click', function() {
+    document.getElementById('fee-details-modal').classList.add('hidden');
+});
+// Handle print summary dropdown
+const printSummaryOptions = document.getElementById('print-summary-options');
+const printSummaryDropdown = document.getElementById('print-summary-dropdown');
+if (printSummaryOptions) {
+    printSummaryOptions.addEventListener('click', function(e) {
+        e.stopPropagation();
+        printSummaryDropdown.classList.toggle('hidden');
+    });
+}
+// Handle export summary dropdown
+const exportSummaryOptions = document.getElementById('export-summary-options');
+const exportSummaryDropdown = document.getElementById('export-summary-dropdown');
+if (exportSummaryOptions) {
+    exportSummaryOptions.addEventListener('click', function(e) {
+        e.stopPropagation();
+        exportSummaryDropdown.classList.toggle('hidden');
+    });
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (printSummaryDropdown && !printSummaryDropdown.contains(e.target) && !printSummaryOptions.contains(e.target)) {
+        printSummaryDropdown.classList.add('hidden');
+    }
+    
+    if (exportSummaryDropdown && !exportSummaryDropdown.contains(e.target) && !exportSummaryOptions.contains(e.target)) {
+        exportSummaryDropdown.classList.add('hidden');
+    }
+});
+// Handle print summary only
+const printSummaryOnly = document.getElementById('print-summary-only');
+if (printSummaryOnly) {
+    printSummaryOnly.addEventListener('click', function() {
+        printSummaryOnlyFunction();
+        printSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle print summary and fees
+const printSummaryAndFees = document.getElementById('print-summary-and-fees');
+if (printSummaryAndFees) {
+    printSummaryAndFees.addEventListener('click', function() {
+        printSummaryAndFeesFunction();
+        printSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export summary only
+const exportSummaryOnly = document.getElementById('export-summary-only');
+if (exportSummaryOnly) {
+    exportSummaryOnly.addEventListener('click', function() {
+        exportSummaryOnlyFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export summary and fees
+const exportSummaryAndFees = document.getElementById('export-summary-and-fees');
+if (exportSummaryAndFees) {
+    exportSummaryAndFees.addEventListener('click', function() {
+        exportSummaryAndFeesFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+}
+// Handle export fees only
+const exportFeesOnly = document.getElementById('export-fees-only');
+if (exportFeesOnly) {
+    exportFeesOnly.addEventListener('click', function() {
+        exportFeesOnlyFunction();
+        exportSummaryDropdown.classList.add('hidden');
+    });
+});
+// Handle View Student Details button clicks
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-student-details') || e.target.closest('.view-student-details')) {
+        const button = e.target.classList.contains('view-student-details') ? e.target : e.target.closest('.view-student-details');
+        const studentId = button.getAttribute('data-student-id');
+        
+        // Show loading state
+        const modal = document.getElementById('student-details-modal');
+        const content = document.getElementById('student-details-content');
+        content.innerHTML = '<p>Loading student details...</p>';
+        modal.classList.remove('hidden');
+        
+        // Fetch student details via AJAX
+        fetch(`/finance/student-details/${studentId}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.student) {
+                // Generate HTML for the student details
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Structure</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                let totalExpected = 0;
+                let totalPaid = 0;
+                let totalBalance = 0;
+                
+                data.student.fees.forEach(fee => {
+                    totalExpected += parseFloat(fee.expected_amount) || 0;
+                    totalPaid += parseFloat(fee.paid_amount) || 0;
+                    totalBalance += parseFloat(fee.balance) || 0;
+                    
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${fee.fee_name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(fee.expected_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(fee.paid_amount || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${fee.balance > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                ₵${parseFloat(fee.balance || 0).toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td class="px-6 py-3 text-sm font-medium text-gray-900">Total</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalExpected.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalPaid.toFixed(2)}</td>
+                                    <td class="px-6 py-3 text-sm font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}">₵${totalBalance.toFixed(2)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            } else {
+                content.innerHTML = '<p class="text-red-500">Failed to load student details.</p>';
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-500">Error loading student details.</p>';
+        });
+    }
+});
+// Handle Close Student Modal button click
+document.getElementById('close-student-modal-btn').addEventListener('click', function() {
+    document.getElementById('student-details-modal').classList.add('hidden');
+});
+// Print summary only function
+function printSummaryOnlyFunction() {
+    // Get the report summary table
+    const reportTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 table');
+    const reportTitle = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 h2').textContent;
+    const reportTotal = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 .text-lg.font-bold.text-indigo-600').textContent;
+    if (!reportTable) {
+        alert('No report summary to print');
+        return;
+    }
+    // Clone the table to avoid modifying the original
+    const clonedTable = reportTable.cloneNode(true);
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+```
+                    </tfoot>
+                </table>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+});
+        <html>
+            <head>
+                <title>Finance Report Summary</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    .header { margin-bottom: 20px; }
+                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>${reportTitle}</h2>
+                    <div class="total">${reportTotal}</div>
+                </div>
+    `);
+    // Add the cloned table to the print window
+    printWindow.document.body.appendChild(clonedTable);
+    printWindow.document.write(`
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+// Print summary and fees function
+function printSummaryAndFeesFunction() {
+    // Get the report summary table
+    const reportTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 table');
+    const reportTitle = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 h2').textContent;
+    const reportTotal = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 .text-lg.font-bold.text-indigo-600').textContent;
+    // Get the fees data table (the main payments table)
+    const feesTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg table.min-w-full.divide-y.divide-gray-200');
+    if (!reportTable) {
+        alert('No report summary to print');
+        return;
+    }
+    // Clone the tables to avoid modifying the original
+    const clonedReportTable = reportTable.cloneNode(true);
+    const clonedFeesTable = feesTable ? feesTable.cloneNode(true) : null;
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Finance Report Summary and Fees Data</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    .header { margin-bottom: 20px; }
+                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; }
+                    .section { margin-top: 40px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>${reportTitle}</h2>
+                    <div class="total">${reportTotal}</div>
+                </div>
+    `);
+    // Add the report summary table
+    printWindow.document.write('<div class="section"><h3>Report Summary</h3>');
+    printWindow.document.body.appendChild(clonedReportTable);
+    printWindow.document.write('</div>');
+    // Add fees table if available
+    if (clonedFeesTable) {
+        printWindow.document.write('<div class="section"><h3>Fees Data</h3>');
+        printWindow.document.body.appendChild(clonedFeesTable);
+        printWindow.document.write('</div>');
+    }
+    printWindow.document.write(`
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+// Export summary only function
+function exportSummaryOnlyFunction() {
+    // Get the report summary table
+    const reportTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 table');
+    const reportTitle = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 h2').textContent;
+    const reportTotal = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 .text-lg.font-bold.text-indigo-600').textContent;
+    if (!reportTable) {
+        alert('No report summary to export');
+        return;
+    }
+    // Get table headers (excluding Actions column)
+    const headers = [];
+    const headerRow = reportTable.querySelector('thead tr');
+    if (headerRow) {
+        const headerCells = headerRow.querySelectorAll('th:not(.actions-column)');
+        headerCells.forEach(cell => {
+            headers.push(cell.textContent.trim());
+        });
+    }
+    // Get table rows (excluding Actions column)
+    const rows = [];
+    reportTable.querySelectorAll('tbody tr').forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('td:not(.actions-column)');
+        cells.forEach(cell => {
+            rowData.push(cell.textContent.trim());
+        });
+        rows.push(rowData.join(','));
+    });
+    // Create CSV content
+    let csvContent = `${reportTitle}\n`;
+    csvContent += `${reportTotal}\n\n`;
+    csvContent += headers.join(',') + '\n';
+    csvContent += rows.join('\n');
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'finance_report_summary.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+// Export fees only function
+function exportFeesOnlyFunction() {
+    // Get the fees data table (the main payments table)
+    const feesTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg table.min-w-full.divide-y.divide-gray-200');
+    if (!feesTable) {
+        alert('No fees data to export');
+        return;
+    }
+    // Create CSV content
+    let csvContent = 'FEES DATA\n';
+    // Get fees table headers (excluding Actions column)
+    const feesHeaders = [];
+    const feesHeaderRow = feesTable.querySelector('thead tr');
+    if (feesHeaderRow) {
+        const headerCells = feesHeaderRow.querySelectorAll('th:not(.actions-column)');
+        headerCells.forEach(cell => {
+            feesHeaders.push(cell.textContent.trim());
+        });
+    }
+    csvContent += feesHeaders.join(',') + '\n';
+    // Get fees table rows (excluding Actions column)
+    feesTable.querySelectorAll('tbody tr').forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('td:not(.actions-column)');
+        cells.forEach(cell => {
+            rowData.push(cell.textContent.trim().replace(/,/g, ';')); // Replace commas to avoid CSV issues
+        });
+        csvContent += rowData.join(',') + '\n';
+    });
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'finance_fees_data_only.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+// Export summary and fees function
+function exportSummaryAndFeesFunction() {
+    // Get the report summary table
+    const reportTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 table');
+    const reportTitle = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 h2').textContent;
+    const reportTotal = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg.mb-6 .text-lg.font-bold.text-indigo-600').textContent;
+    // Get the fees data table (the main payments table)
+    const feesTable = document.querySelector('.bg-white.shadow.overflow-hidden.sm\\:rounded-lg table.min-w-full.divide-y.divide-gray-200');
+    if (!reportTable) {
+        alert('No report summary to export');
+        return;
+    }
+    // Create CSV content
+    let csvContent = `${reportTitle}\n`;
+    csvContent += `${reportTotal}\n\n`;
+    // Add summary section
+    csvContent += 'REPORT SUMMARY\n';
+    // Get summary table headers (excluding Actions column)
+    const headers = [];
+    const headerRow = reportTable.querySelector('thead tr');
+    if (headerRow) {
+        const headerCells = headerRow.querySelectorAll('th:not(.actions-column)');
+        headerCells.forEach(cell => {
+            headers.push(cell.textContent.trim());
+        });
+    }
+    csvContent += headers.join(',') + '\n';
+    // Get summary table rows (excluding Actions column)
+    reportTable.querySelectorAll('tbody tr').forEach(row => {
+        const rowData = [];
+        const cells = row.querySelectorAll('td:not(.actions-column)');
+        cells.forEach(cell => {
+            rowData.push(cell.textContent.trim().replace(/,/g, ';')); // Replace commas to avoid CSV issues
+        });
+        csvContent += rowData.join(',') + '\n';
+    });
+    // Add fees section if available
+    if (feesTable) {
+        csvContent += '\n\nFEES DATA\n';
+        // Get fees table headers (excluding Actions column)
+        const feesHeaders = [];
+        const feesHeaderRow = feesTable.querySelector('thead tr');
+        if (feesHeaderRow) {
+            const headerCells = feesHeaderRow.querySelectorAll('th:not(.actions-column)');
+            headerCells.forEach(cell => {
+                feesHeaders.push(cell.textContent.trim());
+            });
+        }
+        csvContent += feesHeaders.join(',') + '\n';
+        // Get fees table rows (excluding Actions column)
+        feesTable.querySelectorAll('tbody tr').forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('td:not(.actions-column)');
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim().replace(/,/g, ';')); // Replace commas to avoid CSV issues
+            });
+            csvContent += rowData.join(',') + '\n';
+        });
+    }
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'finance_report_summary_and_fees.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+// Initialize the form
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle date filter checkbox toggle
+    const enableDateFilterCheckbox = document.getElementById('enable_date_filter');
+    const dateFilterFields = document.getElementById('date_filter_fields');
+    if (enableDateFilterCheckbox) {
+        enableDateFilterCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                dateFilterFields.classList.remove('hidden');
+            } else {
+                dateFilterFields.classList.add('hidden');
+                // Clear date values when hiding
+                document.getElementById('date_from').value = '';
+                document.getElementById('date_to').value = '';
+            }
+        });
+    }
+    // Handle report type change
+    const reportTypeSelect = document.getElementById('report_type');
+    if (reportTypeSelect) {
+        reportTypeSelect.addEventListener('change', function() {
+            // Submit the form when report type changes
+            this.form.submit();
+        });
+    }
+    // Handle print summary dropdown
+    const printSummaryOptions = document.getElementById('print-summary-options');
+    const printSummaryDropdown = document.getElementById('print-summary-dropdown');
+    if (printSummaryOptions) {
+        printSummaryOptions.addEventListener('click', function(e) {
+            e.stopPropagation();
+            printSummaryDropdown.classList.toggle('hidden');
+        });
+    }
+    // Handle export summary dropdown
+    const exportSummaryOptions = document.getElementById('export-summary-options');
+    const exportSummaryDropdown = document.getElementById('export-summary-dropdown');
+    if (exportSummaryOptions) {
+        exportSummaryOptions.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportSummaryDropdown.classList.toggle('hidden');
+        });
+    }
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (printSummaryDropdown && !printSummaryDropdown.contains(e.target) && !printSummaryOptions.contains(e.target)) {
+            printSummaryDropdown.classList.add('hidden');
+        }
+        if (exportSummaryDropdown && !exportSummaryDropdown.contains(e.target) && !exportSummaryOptions.contains(e.target)) {
+            exportSummaryDropdown.classList.add('hidden');
+        }
+    });
+    // Handle print summary only
+    const printSummaryOnly = document.getElementById('print-summary-only');
+    if (printSummaryOnly) {
+        printSummaryOnly.addEventListener('click', function() {
+            printSummaryOnlyFunction();
+            printSummaryDropdown.classList.add('hidden');
+        });
+    }
+    // Handle print summary and fees
+    const printSummaryAndFees = document.getElementById('print-summary-and-fees');
+    if (printSummaryAndFees) {
+        printSummaryAndFees.addEventListener('click', function() {
+            printSummaryAndFeesFunction();
+            printSummaryDropdown.classList.add('hidden');
+        });
+    }
+    // Handle export summary only
+    const exportSummaryOnly = document.getElementById('export-summary-only');
+    if (exportSummaryOnly) {
+        exportSummaryOnly.addEventListener('click', function() {
+            exportSummaryOnlyFunction();
+            exportSummaryDropdown.classList.add('hidden');
+        });
+    }
+    // Handle export summary and fees
+    const exportSummaryAndFees = document.getElementById('export-summary-and-fees');
+    if (exportSummaryAndFees) {
+        exportSummaryAndFees.addEventListener('click', function() {
+            exportSummaryAndFeesFunction();
+            exportSummaryDropdown.classList.add('hidden');
+        });
+    }
+    // Handle export fees only
+    const exportFeesOnly = document.getElementById('export-fees-only');
+    if (exportFeesOnly) {
+</script>
+<?php
+$content = ob_get_clean();
+include RESOURCES_PATH . '/layouts/app.php';
+?>

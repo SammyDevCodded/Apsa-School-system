@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Report Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-semibold text-gray-900">Attendance Report Test</h1>
+            </div>
+
+            <!-- Test Form -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-5 sm:p-6">
+                    <form method="GET" action="/attendance/report" class="space-y-4" id="test-form">
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            <div>
+                                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                                <input type="date" name="start_date" id="start_date" value="2025-10-01"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                                <input type="date" name="end_date" id="end_date" value="2025-10-31"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="search" class="block text-sm font-medium text-gray-700">Search Student</label>
+                                <input type="text" name="search" id="search" value="John"
+                                    placeholder="Name or Admission No"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="class_id" class="block text-sm font-medium text-gray-700">Class</label>
+                                <select name="class_id" id="class_id"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    <option value="">All Classes</option>
+                                    <option value="1" selected>Grade 1</option>
+                                    <option value="2">Grade 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-2">
+                                <button type="submit"
+                                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Test Instructions</h2>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Make sure you're logged into the system</li>
+                        <li>Click the "Generate Report" button above</li>
+                        <li>The form should submit and display the attendance report</li>
+                        <li>If you see this page again, the form submission is working correctly</li>
+                    </ol>
+                    <div class="mt-6">
+                        <a href="/attendance" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Back to Attendance
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form submission handler for testing
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('test-form');
+            
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    console.log('Form is being submitted');
+                    console.log('Action:', this.action);
+                    console.log('Method:', this.method);
+                    
+                    // Let the form submit normally
+                    return true;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
