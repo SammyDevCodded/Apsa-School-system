@@ -112,4 +112,4 @@ A comprehensive, web-based School Management System designed to streamline admin
     - **Printing**: Added individual print option from Exam Details.
 
 ---
-*Developed by APSA-SMS.*
+*Developed by APSA SYSTEMS(Sammy k jnr).*
