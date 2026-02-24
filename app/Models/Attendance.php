@@ -226,4 +226,49 @@ class Attendance extends Model
                 ORDER BY a.date DESC";
         return $this->db->fetchAll($sql, ['days' => $days]);
     }
+    /**
+     * Get attendance history with dynamic filters
+     */
+    public function getHistory($filters = [])
+    {
+        $sql = "SELECT a.*, s.first_name, s.last_name, s.admission_no, c.name as class_name
+                FROM {$this->table} a 
+                LEFT JOIN students s ON a.student_id = s.id
+                LEFT JOIN classes c ON s.class_id = c.id
+                WHERE 1=1";
+        
+        $params = [];
+        
+        // Filter by Class
+        if (!empty($filters['class_id'])) {
+            $sql .= " AND s.class_id = :class_id";
+            $params['class_id'] = $filters['class_id'];
+        }
+        
+        // Filter by Student (Name or Admission No)
+        if (!empty($filters['student'])) {
+            $sql .= " AND (s.first_name LIKE :student OR s.last_name LIKE :student OR s.admission_no LIKE :student)";
+            $params['student'] = '%' . $filters['student'] . '%';
+        }
+        
+        // Filter by Date Range
+        if (!empty($filters['start_date'])) {
+            $sql .= " AND a.date >= :start_date";
+            $params['start_date'] = $filters['start_date'];
+        }
+        
+        if (!empty($filters['end_date'])) {
+            $sql .= " AND a.date <= :end_date";
+            $params['end_date'] = $filters['end_date'];
+        }
+        
+        $sql .= " ORDER BY a.date DESC, c.name, s.last_name";
+        
+        // Limit results if no filters are applied to prevent huge loads
+         if (empty($filters['class_id']) && empty($filters['student']) && empty($filters['start_date'])) {
+            $sql .= " LIMIT 100";
+        }
+        
+        return $this->db->fetchAll($sql, $params);
+    }
 }

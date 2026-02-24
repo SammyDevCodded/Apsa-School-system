@@ -111,6 +111,28 @@ class StudentController extends Controller
         // Get academic records
         $academicRecords = $studentModel->getAcademicRecords($id);
         
+        // Group academic records by academic year, term, and exam
+        $groupedAcademicRecords = [];
+        foreach ($academicRecords as $record) {
+            $academicYear = !empty($record['academic_year_name']) ? $record['academic_year_name'] : 'Unknown Year';
+            $term = !empty($record['term']) ? $record['term'] : 'Unknown Term';
+            $examName = !empty($record['exam_name']) ? $record['exam_name'] : 'Unknown Exam';
+            
+            if (!isset($groupedAcademicRecords[$academicYear])) {
+                $groupedAcademicRecords[$academicYear] = [];
+            }
+            
+            if (!isset($groupedAcademicRecords[$academicYear][$term])) {
+                $groupedAcademicRecords[$academicYear][$term] = [];
+            }
+            
+            if (!isset($groupedAcademicRecords[$academicYear][$term][$examName])) {
+                $groupedAcademicRecords[$academicYear][$term][$examName] = [];
+            }
+            
+            $groupedAcademicRecords[$academicYear][$term][$examName][] = $record;
+        }
+        
         // Get financial records
         $financialInfo = $studentModel->getFinancialRecords($id);
         
@@ -121,6 +143,57 @@ class StudentController extends Controller
         // Get current academic year
         $academicYearModel = new AcademicYear();
         $currentAcademicYear = $academicYearModel->getCurrent();
+
+        // Get Grouped Attendance Records
+        $attendanceModel = new \App\Models\Attendance();
+        $attendanceRecords = $attendanceModel->getByStudentId($id);
+        $academicYears = $academicYearModel->getAll();
+
+        $groupedAttendance = [];
+        foreach ($attendanceRecords as $record) {
+            $recordDate = strtotime($record['date']);
+            $yearLabel = 'Unknown Year';
+            $termLabel = '';
+
+            foreach ($academicYears as $year) {
+                if ($recordDate >= strtotime($year['start_date']) && $recordDate <= strtotime($year['end_date'])) {
+                    $yearLabel = $year['name'];
+                    $termLabel = $year['term'] ?? ''; // Assuming term is stored in academic_years
+                    break;
+                }
+            }
+            
+            // Construct a key for grouping: "Year Name - Term"
+            $groupKey = $yearLabel;
+            if (!empty($termLabel)) {
+                $groupKey .= ' - ' . $termLabel;
+            }
+
+            if (!isset($groupedAttendance[$groupKey])) {
+                $groupedAttendance[$groupKey] = [
+                    'year' => $yearLabel,
+                    'term' => $termLabel,
+                    'present' => 0,
+                    'absent' => 0,
+                    'late' => 0,
+                    'total' => 0,
+                    'records' => []
+                ];
+            }
+
+            $groupedAttendance[$groupKey]['records'][] = $record;
+            $groupedAttendance[$groupKey]['total']++;
+            
+            $status = strtolower($record['status']);
+            if (isset($groupedAttendance[$groupKey][$status])) {
+                $groupedAttendance[$groupKey][$status]++;
+            }
+        }
+        
+        // Sort grouped attendance by academic year (descending logic if possible, or leave as is)
+        // Since we iterate through attendance records which are likely sorted by date DESC, the groups might appear in that order of first encounter. 
+        // We can sort keys if needed, but array order depends on first insertion.
+
         
         if ($this->isAjaxRequest()) {
             // For AJAX requests, return JSON data for the modal
@@ -133,9 +206,11 @@ class StudentController extends Controller
             $this->view('students/show', [
                 'student' => $student,
                 'academicRecords' => $academicRecords,
+                'groupedAcademicRecords' => $groupedAcademicRecords,
                 'financialInfo' => $financialInfo,
                 'promotionHistory' => $promotionHistory,
-                'currentAcademicYear' => $currentAcademicYear
+                'currentAcademicYear' => $currentAcademicYear,
+                'groupedAttendance' => $groupedAttendance
             ]);
         }
     }
@@ -219,10 +294,10 @@ class StudentController extends Controller
                 if ($uploadResult['success']) {
                     $data['profile_picture'] = $uploadResult['filename'];
                 } else {
+                    $this->flash('error', $uploadResult['message']);
                     if ($this->isAjaxRequest()) {
                         $this->jsonResponse(['error' => $uploadResult['message']], 400);
                     } else {
-                        $this->flash('error', $uploadResult['message']);
                         $this->redirect('/students/create');
                     }
                     return;
@@ -231,10 +306,10 @@ class StudentController extends Controller
             
             // Basic validation
             if (empty($data['admission_no']) || empty($data['first_name']) || empty($data['last_name'])) {
+                $this->flash('error', 'Admission number, first name, and last name are required');
                 if ($this->isAjaxRequest()) {
                     $this->jsonResponse(['error' => 'Admission number, first name, and last name are required'], 400);
                 } else {
-                    $this->flash('error', 'Admission number, first name, and last name are required');
                     $this->redirect('/students/create');
                 }
                 return;
@@ -245,10 +320,10 @@ class StudentController extends Controller
             // Check if admission number already exists
             $existingStudents = $studentModel->findByAdmissionNo($data['admission_no']);
             if (!empty($existingStudents)) {
+                $this->flash('error', 'A student with this admission number already exists');
                 if ($this->isAjaxRequest()) {
                     $this->jsonResponse(['error' => 'A student with this admission number already exists'], 400);
                 } else {
-                    $this->flash('error', 'A student with this admission number already exists');
                     $this->redirect('/students/create');
                 }
                 return;
@@ -262,6 +337,19 @@ class StudentController extends Controller
                 $classModel = new ClassModel();
                 $class = $classModel->find($data['class_id']);
                 $className = $class ? $class['name'] : 'Unknown Class';
+                
+                // AUTO-ASSIGN FEES: If the class has assigned fees, automatically assign them to this new student
+                if (!empty($data['class_id'])) {
+                    $feeModel = new \App\Models\Fee();
+                    $classFees = $feeModel->getFeesByClassId($data['class_id']);
+                    
+                    if (!empty($classFees)) {
+                        $feeAssignmentModel = new \App\Models\FeeAssignment();
+                        foreach ($classFees as $fee) {
+                            $feeAssignmentModel->assignStudents($fee['id'], [$studentId]);
+                        }
+                    }
+                }
                 
                 // Log audit trail with academic year and term
                 $academicYearModel = new AcademicYear();
@@ -290,17 +378,17 @@ class StudentController extends Controller
                 ];
                 $notificationModel->create($notificationData);
                 
+                $this->flash('success', 'Successfully added student ' . $data['first_name'] . ' ' . $data['last_name'] . ' to class ' . $className);
                 if ($this->isAjaxRequest()) {
                     $this->jsonResponse(['success' => true, 'message' => 'Student created successfully', 'student_id' => $studentId]);
                 } else {
-                    $this->flash('success', 'Successfully added student ' . $data['first_name'] . ' ' . $data['last_name'] . ' to class ' . $className);
                     $this->redirect('/students/' . $studentId);
                 }
             } else {
+                $this->flash('error', 'Failed to create student');
                 if ($this->isAjaxRequest()) {
                     $this->jsonResponse(['error' => 'Failed to create student'], 500);
                 } else {
-                    $this->flash('error', 'Failed to create student');
                     $this->redirect('/students/create');
                 }
             }
@@ -465,6 +553,19 @@ class StudentController extends Controller
             $result = $studentModel->update($id, $data);
             
             if ($result !== false) {
+                // If class changed, auto-assign the new class fees
+                if (isset($student['class_id']) && $student['class_id'] != $data['class_id']) {
+                    $feeModel = new \App\Models\Fee();
+                    $classFees = $feeModel->getFeesByClassId($data['class_id']);
+                    
+                    if (!empty($classFees)) {
+                        $feeAssignmentModel = new \App\Models\FeeAssignment();
+                        foreach ($classFees as $fee) {
+                            $feeAssignmentModel->assignStudents($fee['id'], [$id]);
+                        }
+                    }
+                }
+                
                 // Get current academic year for audit logging
                 $academicYearModel = new AcademicYear();
                 $currentAcademicYear = $academicYearModel->getCurrent();
@@ -734,7 +835,18 @@ class StudentController extends Controller
                     font-size: 12px;
                     color: #666;
                 }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 0; padding: 0; }
+                    .watermark { opacity: 0.1 !important; }
+                }
             </style>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    // Optional: window.close(); // Uncomment to close after printing if desired, but often better to let user decide
+                }
+            </script>
         </head>
         <body>
             <?php if ($watermarkSettings['type'] !== 'none'): ?>

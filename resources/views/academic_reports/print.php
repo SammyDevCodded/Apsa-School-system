@@ -253,20 +253,34 @@ $term = isset($currentAcademicYear['term']) ? $currentAcademicYear['term'] : 'N/
                         <div class="border-t border-gray-300 pt-4" id="signaturesSection">
                             <div class="grid grid-cols-3 gap-4 text-center signatures-container">
                                 <?php if ($showTeacherSignature): ?>
-                                <div class="teacher-signature">
-                                    <p>Class Teacher</p>
-                                    <div class="h-12 border-b border-gray-300 mt-8"></div>
-                                    <p class="mt-1">Signature</p>
+                                <div class="signature-box">
+                            <p>Class Teacher</p>
+                            <?php if (!empty($settings['teacher_signature'])): ?>
+                                <div class="signature-image-container mb-1">
+                                    <img src="<?= htmlspecialchars($settings['teacher_signature']) ?>" alt="Signature" class="signature-img">
                                 </div>
-                                <?php endif; ?>
-                                
-                                <?php if ($showHeadteacherSignature): ?>
-                                <div class="headteacher-signature">
-                                    <p>Head Teacher</p>
-                                    <div class="h-12 border-b border-gray-300 mt-8"></div>
-                                    <p class="mt-1">Signature</p>
+                                <div class="signature-line"></div>
+                            <?php else: ?>
+                                <div class="signature-line"></div>
+                            <?php endif; ?>
+                            <p>Signature</p>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($settings['show_headteacher_signature']) && $settings['show_headteacher_signature']): ?>
+                        <div class="signature-box">
+                            <p>Head Teacher</p>
+                            <?php if (!empty($settings['headteacher_signature'])): ?>
+                                <div class="signature-image-container mb-1">
+                                    <img src="<?= htmlspecialchars($settings['headteacher_signature']) ?>" alt="Signature" class="signature-img">
                                 </div>
-                                <?php endif; ?>
+                                <div class="signature-line"></div>
+                            <?php else: ?>
+                                <div class="signature-line"></div>
+                            <?php endif; ?>
+                            <p>Signature</p>
+                        </div>
+                    <?php endif; ?>
                                 
                                 <?php if ($showParentSignature): ?>
                                 <div class="parent-signature">
@@ -348,6 +362,19 @@ $term = isset($currentAcademicYear['term']) ? $currentAcademicYear['term'] : 'N/
         display: block !important;
         visibility: visible !important;
     }
+}
+
+.signature-img {
+    height: 40px; 
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
+}
+.signature-image-container {
+    height: 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
 }
 </style>
 

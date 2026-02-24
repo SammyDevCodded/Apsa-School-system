@@ -9,9 +9,22 @@ ob_start();
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
         <!-- Welcome Section -->
-        <div class="glass-morphism rounded-2xl p-6 mb-8 shadow-lg border-l-4 border-indigo-600">
-            <h1 class="text-3xl font-bold text-gray-900">Welcome back, <?= htmlspecialchars($user['first_name'] ?? 'User') ?>! 👋</h1>
-            <p class="mt-2 text-gray-600">Here's what's happening in your school today.</p>
+        <div class="glass-morphism rounded-2xl p-6 mb-8 shadow-lg border-l-4 border-indigo-600 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Welcome back, <?= htmlspecialchars($user['first_name'] ?? 'User') ?>! 👋</h1>
+                <p class="mt-2 text-gray-600">Here's what's happening in your school today.</p>
+            </div>
+            <div class="text-right hidden md:block pl-6">
+                <!-- Data attributes to store PHP time for JS -->
+                <div id="dashboard-clock-wrapper" data-start-time="<?= $currentDateTime * 1000 ?>">
+                    <div id="dashboard-clock-time" class="text-4xl font-bold text-indigo-700 tracking-tight font-mono leading-none">
+                        <?= date('h:i:s A', $currentDateTime) ?>
+                    </div>
+                    <div id="dashboard-clock-date" class="text-sm font-medium text-gray-500 uppercase tracking-wider mt-1">
+                        <?= date('l, F j, Y', $currentDateTime) ?>
+                    </div>
+                </div>
+            </div>
         </div>
         <!-- Academic Year Alerts -->
         <?php if (isset($daysRemaining) && $daysRemaining !== null): ?>
@@ -391,9 +404,50 @@ ob_start();
             }
         });
     });
+
+    // Real-time Clock Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const wrapper = document.getElementById('dashboard-clock-wrapper');
+        const timeElement = document.getElementById('dashboard-clock-time');
+        const dateElement = document.getElementById('dashboard-clock-date');
+        
+        if (wrapper && timeElement && dateElement) {
+            // Get start time from server (passed via data attribute)
+            // It's in milliseconds since epoch
+            let currentTime = parseInt(wrapper.getAttribute('data-start-time'));
+            
+            function updateClock() {
+                // Add 1 second (1000 ms)
+                currentTime += 1000;
+                
+                const now = new Date(currentTime);
+                
+                // Format Time: HH:MM:SS AM/PM
+                timeElement.textContent = now.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: true
+                });
+                
+                // Format Date: Weekday, Month Day, Year
+                dateElement.textContent = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            }
+            
+            // Update every second
+            setInterval(updateClock, 1000);
+        }
+    });
+
 </script>
 
 <?php 
-$content = ob_get_clean();
-include RESOURCES_PATH . '/layouts/app.php';
-?>
+    $content = ob_get_clean();
+    include RESOURCES_PATH . '/layouts/app.php';
+    ?>

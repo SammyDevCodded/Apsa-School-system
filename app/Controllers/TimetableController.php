@@ -479,32 +479,66 @@ class TimetableController extends Controller
 
     public function viewByDay($day)
     {
+        // ... existing code ...
+        $this->view('timetables/view_by_day', [
+            'timetables' => $timetables,
+            'day' => $day,
+            'dayName' => $dayName
+        ]);
+    }
+
+    public function print()
+    {
         // Check if user is logged in
         if (!isset($_SESSION['user'])) {
             $this->redirect('/login');
         }
 
-        // For viewing timetables, all authenticated users can access
-        // No need to check for admin role here
+        // Get filter parameters
+        $classId = $_GET['class_id'] ?? null;
+        $staffId = $_GET['staff_id'] ?? null;
+        $subjectId = $_GET['subject_id'] ?? null;
 
-        $timetables = $this->timetableModel->getByDay($day);
-        
-        $dayNames = [
-            'monday' => 'Monday',
-            'tuesday' => 'Tuesday',
-            'wednesday' => 'Wednesday',
-            'thursday' => 'Thursday',
-            'friday' => 'Friday',
-            'saturday' => 'Saturday',
-            'sunday' => 'Sunday'
-        ];
-        
-        $dayName = $dayNames[$day] ?? ucfirst($day);
-        
-        $this->view('timetables/view_by_day', [
+        $title = 'Timetable';
+        $subTitle = 'All Entires';
+
+        // Get timetables with filters
+        if ($classId || $staffId || $subjectId) {
+            $timetables = $this->timetableModel->getFiltered($classId, $staffId, $subjectId);
+            
+            // Determine Title
+            if ($classId) {
+                $class = $this->classModel->find($classId);
+                if ($class) {
+                    $title = 'Class Timetable';
+                    $subTitle = 'Class: ' . $class['name'];
+                }
+            } elseif ($staffId) {
+                $staff = $this->staffModel->find($staffId);
+                if ($staff) {
+                    $title = 'Staff Timetable';
+                    $subTitle = 'Staff: ' . $staff['first_name'] . ' ' . $staff['last_name'];
+                }
+            } elseif ($subjectId) {
+                 $subject = $this->subjectModel->find($subjectId);
+                 if ($subject) {
+                     $title = 'Subject Timetable';
+                     $subTitle = 'Subject: ' . $subject['name'];
+                 }
+            }
+        } else {
+            $timetables = $this->timetableModel->getAll();
+        }
+
+        // Get school settings for header
+        $settingModel = new \App\Models\Setting();
+        $settings = $settingModel->getSettings();
+
+        $this->view('timetables/print', [
             'timetables' => $timetables,
-            'day' => $day,
-            'dayName' => $dayName
+            'settings' => $settings,
+            'pageTitle' => $title,
+            'subTitle' => $subTitle
         ]);
     }
 }

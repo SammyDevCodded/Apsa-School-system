@@ -29,7 +29,45 @@ class AttendanceController extends Controller
         $attendanceDates = $attendanceModel->getAttendanceDatesForMonth($selectedMonth);
         
         // Get recent attendance records for the history tab
-        $recentAttendance = $attendanceModel->getRecentAttendance();
+        // Get filter parameters
+        $filters = [
+            'class_id' => $this->get('history_class_id', ''),
+            'student' => $this->get('history_student', ''),
+            'period' => $this->get('history_period', 'today'), // Default to today
+            'start_date' => $this->get('history_start_date', ''),
+            'end_date' => $this->get('history_end_date', '')
+        ];
+        
+        // Calculate date range based on period
+        switch ($filters['period']) {
+            case 'today':
+                $filters['start_date'] = date('Y-m-d');
+                $filters['end_date'] = date('Y-m-d');
+                break;
+            case 'week':
+                // Current week (Monday to Sunday)
+                $filters['start_date'] = date('Y-m-d', strtotime('monday this week'));
+                $filters['end_date'] = date('Y-m-d', strtotime('sunday this week'));
+                break;
+            case 'month':
+                $filters['start_date'] = date('Y-m-01');
+                $filters['end_date'] = date('Y-m-t');
+                break;
+            case 'year':
+                // Current year
+                $filters['start_date'] = date('Y-01-01');
+                $filters['end_date'] = date('Y-12-31');
+                break;
+            case 'custom':
+                // Use provided start/end dates
+                break;
+            default:
+                // Default to today if invalid period
+                 $filters['start_date'] = date('Y-m-d');
+                 $filters['end_date'] = date('Y-m-d');
+        }
+        
+        $historyRecords = $attendanceModel->getHistory($filters);
         
         // Group records by class
         $attendanceByClass = [];
@@ -41,13 +79,19 @@ class AttendanceController extends Controller
             $attendanceByClass[$className][] = $record;
         }
         
+        // Get all classes for filter dropdown
+        $classModel = new ClassModel();
+        $classes = $classModel->getAll();
+        
         $this->view('attendance/index', [
             'attendanceByClass' => $attendanceByClass,
             'date' => $date,
             'monthsWithAttendance' => $monthsWithAttendance,
             'selectedMonth' => $selectedMonth,
             'attendanceDates' => $attendanceDates,
-            'recentAttendance' => $recentAttendance
+            'historyRecords' => $historyRecords,
+            'filters' => $filters,
+            'classes' => $classes
         ]);
     }
     

@@ -21,7 +21,7 @@ ob_start();
             <!-- Settings Form -->
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
-                    <form action="/report-cards/settings" method="POST" class="space-y-6" id="reportCardForm">
+                    <form action="/report-cards/settings" method="POST" class="space-y-6" id="reportCardForm" enctype="multipart/form-data">
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <!-- Logo Position -->
                             <div>
@@ -120,13 +120,39 @@ ob_start();
                                 </div>
                                 
                                 <div class="flex items-center">
+                                    <input id="show_headteacher_signature" name="show_headteacher_signature" type="checkbox" <?= (isset($reportCardSettings['show_headteacher_signature']) && $reportCardSettings['show_headteacher_signature']) ? 'checked' : '' ?> class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="show_headteacher_signature" class="ml-3 block text-sm font-medium text-gray-700">Show Headteacher Signature</label>
+                                </div>
+                                
+                                <div id="headteacher_signature_field" class="ml-8 mt-2 <?= (isset($reportCardSettings['show_headteacher_signature']) && $reportCardSettings['show_headteacher_signature']) ? '' : 'hidden' ?>">
+                                    <label class="block text-sm font-medium text-gray-700">Headteacher Signature Image</label>
+                                    <div class="mt-1 flex items-center">
+                                        <?php if (!empty($reportCardSettings['headteacher_signature'])): ?>
+                                            <div class="mr-4">
+                                                <img src="<?= htmlspecialchars($reportCardSettings['headteacher_signature']) ?>" alt="Headteacher Signature" class="h-12 object-contain border border-gray-300 p-1 bg-white">
+                                            </div>
+                                        <?php endif; ?>
+                                        <input type="file" name="headteacher_signature" id="headteacher_signature" accept="image/*" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Upload a transparent PNG signature image.</p>
+                                </div>
+                                
+                                <div class="flex items-center mt-4">
                                     <input id="show_teacher_signature" name="show_teacher_signature" type="checkbox" <?= (isset($reportCardSettings['show_teacher_signature']) && $reportCardSettings['show_teacher_signature']) ? 'checked' : '' ?> class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                                     <label for="show_teacher_signature" class="ml-3 block text-sm font-medium text-gray-700">Show Teacher Signature</label>
                                 </div>
-                                
-                                <div class="flex items-center">
-                                    <input id="show_headteacher_signature" name="show_headteacher_signature" type="checkbox" <?= (isset($reportCardSettings['show_headteacher_signature']) && $reportCardSettings['show_headteacher_signature']) ? 'checked' : '' ?> class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="show_headteacher_signature" class="ml-3 block text-sm font-medium text-gray-700">Show Headteacher Signature</label>
+
+                                <div id="teacher_signature_field" class="ml-8 mt-2 <?= (isset($reportCardSettings['show_teacher_signature']) && $reportCardSettings['show_teacher_signature']) ? '' : 'hidden' ?>">
+                                    <label class="block text-sm font-medium text-gray-700">Teacher Signature Image</label>
+                                    <div class="mt-1 flex items-center">
+                                        <?php if (!empty($reportCardSettings['teacher_signature'])): ?>
+                                            <div class="mr-4">
+                                                <img src="<?= htmlspecialchars($reportCardSettings['teacher_signature']) ?>" alt="Teacher Signature" class="h-12 object-contain border border-gray-300 p-1 bg-white">
+                                            </div>
+                                        <?php endif; ?>
+                                        <input type="file" name="teacher_signature" id="teacher_signature" accept="image/*" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Upload a transparent PNG signature image.</p>
                                 </div>
                                 
                                 <div class="flex items-center">
@@ -498,9 +524,68 @@ document.addEventListener('DOMContentLoaded', function() {
         const headteacherSignature = document.querySelector('.headteacher-signature');
         const parentSignature = document.querySelector('.parent-signature');
         
-        if (teacherSignature) teacherSignature.style.display = document.getElementById('show_teacher_signature').checked ? 'block' : 'none';
-        if (headteacherSignature) headteacherSignature.style.display = document.getElementById('show_headteacher_signature').checked ? 'block' : 'none';
+        if (teacherSignature) {
+            teacherSignature.style.display = document.getElementById('show_teacher_signature').checked ? 'block' : 'none';
+            // Update image if available (this is tricky with file input preview, so we rely on what's already saved or just show placeholder)
+            // For now, let's just use the server-side value if available
+            const teacherSigImg = teacherSignature.querySelector('img');
+            const teacherSigUrl = <?= json_encode(!empty($reportCardSettings['teacher_signature']) ? $reportCardSettings['teacher_signature'] : null) ?>;
+            
+            if (teacherSigUrl) {
+                if (!teacherSigImg) {
+                    const img = document.createElement('img');
+                    img.src = teacherSigUrl;
+                    img.className = 'mx-auto h-12 object-contain';
+                    // Insert before the line
+                    teacherSignature.insertBefore(img, teacherSignature.querySelector('.border-b'));
+                     // Remove the line? No, usually signature is on top of line
+                }
+            }
+        }
+        
+        if (headteacherSignature) {
+            headteacherSignature.style.display = document.getElementById('show_headteacher_signature').checked ? 'block' : 'none';
+            const headTeacherSigImg = headteacherSignature.querySelector('img');
+            const headTeacherSigUrl = <?= json_encode(!empty($reportCardSettings['headteacher_signature']) ? $reportCardSettings['headteacher_signature'] : null) ?>;
+            
+            if (headTeacherSigUrl) {
+                if (!headTeacherSigImg) {
+                     const img = document.createElement('img');
+                    img.src = headTeacherSigUrl;
+                    img.className = 'mx-auto h-12 object-contain';
+                    headteacherSignature.insertBefore(img, headteacherSignature.querySelector('.border-b'));
+                }
+            }
+        }
+        
         if (parentSignature) parentSignature.style.display = document.getElementById('show_parent_signature').checked ? 'block' : 'none';
+    }
+    
+    // Toggle signature upload fields
+    const showHeadteacherSignatureCheckbox = document.getElementById('show_headteacher_signature');
+    const headteacherSignatureField = document.getElementById('headteacher_signature_field');
+    
+    if (showHeadteacherSignatureCheckbox) {
+        showHeadteacherSignatureCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                headteacherSignatureField.classList.remove('hidden');
+            } else {
+                headteacherSignatureField.classList.add('hidden');
+            }
+        });
+    }
+
+    const showTeacherSignatureCheckbox = document.getElementById('show_teacher_signature');
+    const teacherSignatureField = document.getElementById('teacher_signature_field');
+    
+    if (showTeacherSignatureCheckbox) {
+        showTeacherSignatureCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                teacherSignatureField.classList.remove('hidden');
+            } else {
+                teacherSignatureField.classList.add('hidden');
+            }
+        });
     }
     
     // Attach event listeners to all form elements

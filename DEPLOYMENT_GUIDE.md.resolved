@@ -1,0 +1,57 @@
+# Deployment Guide: From Local WAMP to Production
+
+This guide explains how to transition your **Futuristic School Management ERP** from your local Windows (WAMP) setup to a live web server (Shared Hosting or VPS).
+
+## 1. Local vs. Production: What Changes?
+
+Your local setup uses **Batch Files ([.bat](file:///c:/wamp64/www/f2/start_dev.bat))** and the **PHP Built-in Server**. This is great for development but works differently on a live server.
+
+| Feature | Local (Windows/WAMP) | Production (Linux/Hosting) |
+| :--- | :--- | :--- |
+| **Starting the Server** | You run [start_server.bat](file:///c:/wamp64/www/f2/start_server.bat) | **Always On.** The web server (Apache/Nginx) runs automatically 24/7. You don't "start" it. |
+| **Web Server** | `php -S localhost:8000` | **Apache** or **Nginx**. |
+| **Routing** | handled by `router.php` | handled by [.htaccess](file:///c:/wamp64/www/f2/.htaccess) (Apache) or `nginx.conf`. |
+| **Database** | [init_db.php](file:///c:/wamp64/www/f2/init_db.php) re-inits DB | **Persistent.** You import your SQL once; data stays forever. |
+| **Domain** | `localhost:8000` | `your-school-domain.com` |
+
+---
+
+## 2. Steps to Deploy
+
+### Step 1: Prepare Your Files
+1.  **Ignore these files:** You do **NOT** need to upload these tools to the server:
+    *   [start_server.bat](file:///c:/wamp64/www/f2/start_server.bat)
+    *   [start_dev.bat](file:///c:/wamp64/www/f2/start_dev.bat)
+    *   `router.php` (Only needed for local `php -S`)
+2.  **Ensure [.htaccess](file:///c:/wamp64/www/f2/.htaccess) exists:** Make sure [public/.htaccess](file:///c:/wamp64/www/f2/public/.htaccess) is included. This tells the server how to handle URLs (like `/login` instead of `login.php`).
+
+### Step 2: Update Configuration
+On your local machine, [config/config.php](file:///c:/wamp64/www/f2/config/config.php) points to `localhost`. On the server, it must point to your real domain.
+*   **Action:** Edit [config/config.php](file:///c:/wamp64/www/f2/config/config.php) on the server after uploading:
+    ```php
+    // Local
+    define('BASE_URL', 'http://localhost:8000');
+
+    // Production (Change to this)
+    define('BASE_URL', 'https://school-erp.com');
+    ```
+
+### Step 3: Database Setup
+1.  **Export Local DB:** Go to `http://localhost/phpmyadmin` (or however you access local DB), select your database, and click **Export** to get a [.sql](file:///c:/wamp64/www/f2/fix_academic_year_status.sql) file.
+2.  **Create Server DB:** On your hosting (cPanel), create a new MySQL Database and User. Note down the **Database Name**, **Username**, and **Password**.
+3.  **Import DB:** Open phpMyAdmin on your hosting and **Import** the [.sql](file:///c:/wamp64/www/f2/fix_academic_year_status.sql) file you exported.
+4.  **Connect Code:** Update your database connection file (e.g., `config/database.php` or `.env`) with the *new* server credentials.
+
+### Step 4: Permissions
+Linux servers are strict about security. You must allow the server to write to certain folders (like where student photos or reports are saved).
+*   **Action:** If you have a `storage/` or `uploads/` folder, set permissions to `755` or `775` via your File Manager or FTP.
+
+---
+
+## 3. Common Questions
+
+**Q: Do I run [start_server.bat](file:///c:/wamp64/www/f2/start_server.bat) on the server?**
+**A:** No. Windows Batch files do not run on Linux servers. The server is already running Apache/Nginx to serve your site.
+
+**Q: What about [start_dev.bat](file:///c:/wamp64/www/f2/start_dev.bat) and [init_db.php](file:///c:/wamp64/www/f2/init_db.php)?**
+**A:** [start_dev.bat](file:///c:/wamp64/www/f2/start_dev.bat) is also for Windows only. You might run `php init_db.php` via **SSH** (command line) *once* to set up the database if you haven't imported an SQL file, but be careful—it might reset your data! In production, we usually use **Migrations** instead of resetting the DB.

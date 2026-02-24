@@ -59,6 +59,34 @@ class Student extends Model
                 ORDER BY s.last_name, s.first_name";
         return $this->db->fetchAll($sql, ['class_id' => $classId]);
     }
+
+    public function isDuplicate($admissionNo, $firstName, $lastName, $dob)
+    {
+        $sql = "SELECT id FROM {$this->table} 
+                WHERE admission_no = :admission_no 
+                OR (first_name = :first_name AND last_name = :last_name AND dob = :dob)
+                LIMIT 1";
+                
+        $params = [
+            'admission_no' => $admissionNo,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'dob' => $dob
+        ];
+        
+        $result = $this->db->fetchOne($sql, $params);
+        return $result !== false;
+    }
+
+    
+    public function getCountByClassId($classId)
+    {
+        $sql = "SELECT COUNT(*) as count 
+                FROM {$this->table} 
+                WHERE class_id = :class_id";
+        $result = $this->db->fetchOne($sql, ['class_id' => $classId]);
+        return $result ? (int)$result['count'] : 0;
+    }
     
     public function getByClassIdPaginated($classId, $page = 1, $perPage = 10)
     {

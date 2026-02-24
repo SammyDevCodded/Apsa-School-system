@@ -192,19 +192,100 @@ $activeTab = $_GET['tab'] ?? 'academic';
 
         <!-- Tab Navigation -->
         <div class="border-b border-gray-200 mb-6">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <a href="#" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm academic-tab-link <?= $activeTab === 'academic' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?>" data-tab="academic">
-                    Academic Information
-                </a>
-                <a href="#" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm financial-tab-link <?= $activeTab === 'financial' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?>" data-tab="financial">
-                    Financial Information
-                </a>
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <a href="?tab=academic" class="<?= $activeTab === 'academic' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Academic Records
+                    </a>
+                    <a href="?tab=attendance" class="<?= $activeTab === 'attendance' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Attendance
+                    </a>
+                    <a href="?tab=financial" class="<?= $activeTab === 'financial' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Financial History
+                    </a>
             </nav>
         </div>
 
         <!-- Tab Content -->
+        <!-- Attendance Tab -->
+        <div id="attendance" class="<?= $activeTab === 'attendance' ? '' : 'hidden' ?>">
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Attendance History</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Attendance records grouped by academic year and term.</p>
+                </div>
+                <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                    <?php if (empty($groupedAttendance)): ?>
+                        <p class="text-gray-500 text-center py-4">No attendance records found.</p>
+                    <?php else: ?>
+                        <div class="space-y-6">
+                            <?php foreach ($groupedAttendance as $groupName => $data): ?>
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="text-md font-bold text-gray-800 mb-2 border-b pb-2"><?= htmlspecialchars($groupName) ?></h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <div class="bg-white p-3 rounded shadow-sm text-center">
+                                            <span class="block text-xs text-gray-500 uppercase">Present</span>
+                                            <span class="block text-xl font-bold text-green-600"><?= $data['present'] ?></span>
+                                        </div>
+                                        <div class="bg-white p-3 rounded shadow-sm text-center">
+                                            <span class="block text-xs text-gray-500 uppercase">Absent</span>
+                                            <span class="block text-xl font-bold text-red-600"><?= $data['absent'] ?></span>
+                                        </div>
+                                        <div class="bg-white p-3 rounded shadow-sm text-center">
+                                            <span class="block text-xs text-gray-500 uppercase">Late</span>
+                                            <span class="block text-xl font-bold text-yellow-600"><?= $data['late'] ?></span>
+                                        </div>
+                                        <div class="bg-white p-3 rounded shadow-sm text-center">
+                                            <span class="block text-xs text-gray-500 uppercase">Attendance Rate</span>
+                                            <?php 
+                                            $rate = $data['total'] > 0 ? round(($data['present'] / $data['total']) * 100, 1) : 0;
+                                            $colorClass = $rate >= 90 ? 'text-green-600' : ($rate >= 75 ? 'text-yellow-600' : 'text-red-600');
+                                            ?>
+                                            <span class="block text-xl font-bold <?= $colorClass ?>"><?= $rate ?>%</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Toggle Details Button -->
+                                    <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium focus:outline-none" onclick="document.getElementById('details-<?= md5($groupName) ?>').classList.toggle('hidden')">
+                                        Toggle Detailed Records
+                                    </button>
+                                    
+                                    <!-- Detailed Records (Hidden by default) -->
+                                    <div id="details-<?= md5($groupName) ?>" class="hidden mt-4 overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-100">
+                                                <tr>
+                                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                <?php foreach ($data['records'] as $record): ?>
+                                                    <tr>
+                                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900"><?= date('M j, Y', strtotime($record['date'])) ?></td>
+                                                        <td class="px-3 py-2 whitespace-nowrap text-sm">
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                                <?= $record['status'] === 'present' ? 'bg-green-100 text-green-800' : 
+                                                                   ($record['status'] === 'absent' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') ?>">
+                                                                <?= ucfirst($record['status']) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500"><?= htmlspecialchars($record['remarks'] ?? '-') ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
         <!-- Academic Information Tab -->
-        <div id="academic-tab-content" class="bg-white shadow overflow-hidden sm:rounded-lg tab-content <?= $activeTab === 'academic' ? 'block' : 'hidden' ?>">
+        <div id="academic" class="bg-white shadow overflow-hidden sm:rounded-lg <?= $activeTab === 'academic' ? '' : 'hidden' ?>">
             <div class="px-4 py-5 sm:px-6">
                 <div class="flex justify-between items-center">
                     <h3 class="text-lg leading-6 font-medium text-gray-900">Academic Information</h3>
@@ -215,7 +296,7 @@ $activeTab = $_GET['tab'] ?? 'academic';
                             </svg>
                             Print
                         </button>
-                        <button onclick="exportTableToCSV('academic-records-table', 'academic_records_<?= $student['admission_no'] ?>')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-md text-sm font-medium transition flex items-center">
+                        <button onclick="exportGroupedTableToCSV('academic-records-container', 'academic_records_<?= $student['admission_no'] ?>')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-md text-sm font-medium transition flex items-center">
                             <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
@@ -226,54 +307,109 @@ $activeTab = $_GET['tab'] ?? 'academic';
                 <p class="mt-1 max-w-2xl text-sm text-gray-500">Recorded academics of student</p>
             </div>
             <div class="border-t border-gray-200">
-                <?php if (empty($academicRecords)): ?>
+                <?php if (empty($groupedAcademicRecords)): ?>
                 <div class="px-4 py-5 sm:px-6 text-sm text-gray-500">
                     No academic records found for this student.
                 </div>
                 <?php else: ?>
-                <div class="overflow-x-auto" id="academic-records-container">
-                    <table id="academic-records-table" class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Exam
-                                </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Term
-                                </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Subject
-                                </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Marks
-                                </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Grade
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <?php foreach ($academicRecords as $record): ?>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?= htmlspecialchars($record['exam_name']) ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= htmlspecialchars($termLabels[$record['term']] ?? $record['term']) ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= htmlspecialchars($record['subject_name']) ?> (<?= htmlspecialchars($record['subject_code']) ?>)
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= htmlspecialchars($record['marks']) ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= htmlspecialchars($record['grade']) ?>
-                                </td>
-                            </tr>
+                <div id="academic-records-container">
+                    <?php foreach ($groupedAcademicRecords as $academicYear => $terms): ?>
+                    <div class="px-4 py-3 bg-gray-50 border-t border-b border-gray-200">
+                        <h5 class="text-sm font-bold text-gray-700"><?= htmlspecialchars($academicYear) ?></h5>
+                    </div>
+                    <?php foreach ($terms as $term => $exams): ?>
+                    <div class="border-b border-gray-200">
+                        <div class="px-4 py-2 bg-white">
+                            <h6 class="text-sm font-medium text-gray-600 ml-4 border-l-2 border-indigo-500 pl-2"><?= htmlspecialchars($termLabels[$term] ?? $term) ?></h6>
+                        </div>
+                        
+                        <div class="px-4 pb-4">
+                            <?php foreach ($exams as $examName => $records): 
+                                $examId = md5($academicYear . $term . $examName);
+                            ?>
+                            <div class="mb-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                <!-- Exam Header / Toggle -->
+                                <button type="button" 
+                                        onclick="toggleExamDetails('<?= $examId ?>')"
+                                        class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 focus:outline-none transition-colors duration-150">
+                                    <div class="flex items-center">
+                                        <svg id="icon-<?= $examId ?>" class="h-5 w-5 text-gray-500 transform transition-transform duration-200 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        <span class="ml-2 text-sm font-semibold text-gray-800"><?= htmlspecialchars($examName) ?></span>
+                                        <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-800">
+                                            <?= count($records) ?> Subjects
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Click to view details
+                                    </div>
+                                </button>
+                                
+                                <!-- Exam Details (Collapsible) -->
+                                <div id="details-<?= $examId ?>" class="hidden border-t border-gray-200">
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Subject
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Marks
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Grade
+                                                    </th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Remarks
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                <?php foreach ($records as $record): ?>
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        <?= htmlspecialchars($record['subject_name']) ?> <span class="text-gray-500 text-xs">(<?= htmlspecialchars($record['subject_code']) ?>)</span>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <?= htmlspecialchars($record['marks']) ?>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                            <?= htmlspecialchars($record['grade']) ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <?= htmlspecialchars($record['remark'] ?? '-') ?>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                             <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php endforeach; ?>
+
+                    <script>
+                        function toggleExamDetails(id) {
+                            const details = document.getElementById('details-' + id);
+                            const icon = document.getElementById('icon-' + id);
+                            
+                            if (details.classList.contains('hidden')) {
+                                details.classList.remove('hidden');
+                                icon.classList.remove('-rotate-90');
+                            } else {
+                                details.classList.add('hidden');
+                                icon.classList.add('-rotate-90');
+                            }
+                        }
+                    </script>
                 </div>
                 <?php endif; ?>
                 
@@ -382,6 +518,9 @@ $activeTab = $_GET['tab'] ?? 'academic';
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Action
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -407,6 +546,35 @@ $activeTab = $_GET['tab'] ?? 'academic';
                                         <?= htmlspecialchars($paymentStatusLabels[$info['status']]) ?>
                                     </span>
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <?php 
+                                    // Filter payments for this fee
+                                    $feePayments = array_filter($financialInfo['payments'], function($p) use ($info) {
+                                        return $p['fee_id'] == $info['id'];
+                                    });
+                                    // Re-index array
+                                    $feePayments = array_values($feePayments);
+                                    
+                                    $feeData = [
+                                        'id' => $info['id'],
+                                        'name' => $info['name'],
+                                        'type' => ucfirst($info['type']),
+                                        'amount' => $info['amount'],
+                                        'paid_amount' => $info['paid_amount'],
+                                        'balance' => $info['balance'],
+                                        'status' => $paymentStatusLabels[$info['status']],
+                                        'status_color' => $paymentStatusColors[$info['status']],
+                                        'description' => $info['description'] ?? 'No description available.',
+                                        'payments' => $feePayments
+                                    ];
+                                    ?>
+                                    <button type="button" 
+                                            onclick="openFeeDetails(this)"
+                                            data-fee='<?= htmlspecialchars(json_encode($feeData), ENT_QUOTES, 'UTF-8') ?>'
+                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Details
+                                    </button>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -428,19 +596,297 @@ $activeTab = $_GET['tab'] ?? 'academic';
                                     <?php 
                                     $totalFees = array_sum(array_column($financialInfo['fees'], 'amount'));
                                     $totalPaid = $financialInfo['total_payments'];
-                                    if ($totalPaid >= $totalFees) {
+                                    $totalBalance = array_sum(array_column($financialInfo['fees'], 'balance'));
+                                    
+                                    if ($totalBalance <= 0 && $totalPaid >= $totalFees) {
+                                        $totalStatus = 'Fully Paid';
+                                        $totalStatusColor = 'bg-green-100 text-green-800';
                                         echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Fully Paid</span>';
                                     } else if ($totalPaid > 0) {
+                                        $totalStatus = 'Partly Paid';
+                                        $totalStatusColor = 'bg-yellow-100 text-yellow-800';
                                         echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Partly Paid</span>';
                                     } else {
+                                        $totalStatus = 'Pending';
+                                        $totalStatusColor = 'bg-red-100 text-red-800';
                                         echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Pending</span>';
                                     }
                                     ?>
+                                </td>
+                                <td class="px-6 py-3 text-sm text-gray-500">
+                                    <?php
+                                    $totalData = [
+                                        'id' => 'total',
+                                        'name' => 'Consolidated Financials',
+                                        'type' => 'All Fees',
+                                        'amount' => $totalFees,
+                                        'paid_amount' => $totalPaid,
+                                        'balance' => $totalBalance,
+                                        'status' => $totalStatus,
+                                        'status_color' => $totalStatusColor,
+                                        'description' => 'Consolidated view of all fees and payments.',
+                                        'payments' => array_values($financialInfo['payments']) // All payments
+                                    ];
+                                    ?>
+                                    <button type="button" 
+                                            onclick="openFeeDetails(this)"
+                                            data-fee='<?= htmlspecialchars(json_encode($totalData), ENT_QUOTES, 'UTF-8') ?>'
+                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Details
+                                    </button>
                                 </td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
+
+                <!-- Fee Details Modal -->
+                <div id="fee-details-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeFeeDetails()"></div>
+                        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div class="sm:flex sm:items-start">
+                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                        <div class="flex justify-between items-center w-full">
+                                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Fee Details</h3>
+                                            <div class="text-sm text-gray-500">
+                                                Student: <span class="font-medium text-gray-900"><?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?></span> (<?= htmlspecialchars($student['admission_no']) ?>)
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Header Info -->
+                                        <div class="mt-4 grid grid-cols-2 gap-4 border-b pb-4">
+                                            <div>
+                                                <p class="text-sm text-gray-500">Fee Name</p>
+                                                <p class="font-bold text-gray-900" id="modal-fee-name"></p>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm text-gray-500">Fee Type</p>
+                                                <p class="font-bold text-gray-900" id="modal-fee-type"></p>
+                                            </div>
+                                            <div class="col-span-2">
+                                                <p class="text-sm text-gray-500">Description</p>
+                                                <p class="text-gray-900" id="modal-fee-desc"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Financial Summary -->
+                                        <div class="mt-4 grid grid-cols-4 gap-2 bg-gray-50 p-3 rounded">
+                                            <div class="text-center">
+                                                <p class="text-xs text-gray-500 uppercase">Amount</p>
+                                                <p class="font-bold text-gray-900" id="modal-fee-amount"></p>
+                                            </div>
+                                            <div class="text-center">
+                                                <p class="text-xs text-gray-500 uppercase">Paid</p>
+                                                <p class="font-bold text-green-600" id="modal-fee-paid"></p>
+                                            </div>
+                                            <div class="text-center">
+                                                <p class="text-xs text-gray-500 uppercase">Balance</p>
+                                                <p class="font-bold text-red-600" id="modal-fee-balance"></p>
+                                            </div>
+                                            <div class="text-center">
+                                                <p class="text-xs text-gray-500 uppercase">Status</p>
+                                                <p class="font-bold" id="modal-fee-status"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Payment History -->
+                                        <div class="mt-6">
+                                            <h4 class="text-md font-bold text-gray-900 mb-2">Payment History</h4>
+                                            <div class="overflow-x-auto border rounded">
+                                                <table class="min-w-full divide-y divide-gray-200" id="modal-payments-table">
+                                                    <thead class="bg-gray-100">
+                                                        <tr>
+                                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ref</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                                                        <!-- Populated by JS -->
+                                                    </tbody>
+                                                </table>
+                                                <p id="modal-no-payments" class="text-center text-gray-500 py-4 hidden">No payments recorded for this fee.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <button type="button" onclick="closeFeeDetails()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                    Close
+                                </button>
+                                <button type="button" onclick="printFeeDetails()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                    Print
+                                </button>
+                                <button type="button" onclick="exportFeeDetailsCSV()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                                    Export CSV
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    let currentFeeData = null;
+
+                    function openFeeDetails(button) {
+                        const feeData = JSON.parse(button.getAttribute('data-fee'));
+                        currentFeeData = feeData;
+
+                        // Populate Modal Fields
+                        document.getElementById('modal-fee-name').textContent = feeData.name;
+                        document.getElementById('modal-fee-type').textContent = feeData.type;
+                        document.getElementById('modal-fee-desc').textContent = feeData.description;
+                        document.getElementById('modal-fee-amount').textContent = parseFloat(feeData.amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                        document.getElementById('modal-fee-paid').textContent = parseFloat(feeData.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                        document.getElementById('modal-fee-balance').textContent = parseFloat(feeData.balance).toLocaleString('en-US', {minimumFractionDigits: 2});
+                        
+                        const statusEl = document.getElementById('modal-fee-status');
+                        statusEl.textContent = feeData.status;
+                        statusEl.className = 'font-bold px-2 inline-flex text-xs leading-5 rounded-full ' + feeData.status_color;
+
+                        // Populate Payments Table
+                        const tbody = document.querySelector('#modal-payments-table tbody');
+                        tbody.innerHTML = '';
+                        
+                        if (feeData.payments.length > 0) {
+                            document.getElementById('modal-no-payments').classList.add('hidden');
+                            document.getElementById('modal-payments-table').classList.remove('hidden');
+                            
+                            feeData.payments.forEach(payment => {
+                                const row = `
+                                    <tr>
+                                        <td class="px-4 py-2 whitespace-nowrap">${new Date(payment.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">${parseFloat(payment.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">${payment.payment_method || '-'}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">${payment.reference_number || '-'}</td>
+                                    </tr>
+                                `;
+                                tbody.insertAdjacentHTML('beforeend', row);
+                            });
+                        } else {
+                            document.getElementById('modal-no-payments').classList.remove('hidden');
+                            document.getElementById('modal-payments-table').classList.add('hidden');
+                        }
+
+                        // Show Modal
+                        document.getElementById('fee-details-modal').classList.remove('hidden');
+                    }
+
+                    function closeFeeDetails() {
+                        document.getElementById('fee-details-modal').classList.add('hidden');
+                    }
+
+                    function printFeeDetails() {
+                        if (!currentFeeData) return;
+
+                        const printWindow = window.open('', '_blank');
+                        let paymentsHtml = '';
+                        
+                        if (currentFeeData.payments.length > 0) {
+                            paymentsHtml = `
+                                <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+                                    <thead>
+                                        <tr style="background-color: #f3f4f6;">
+                                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Date</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Amount</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Method</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Reference</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${currentFeeData.payments.map(p => `
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">${new Date(p.date).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'})}</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">${parseFloat(p.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">${p.payment_method || '-'}</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">${p.reference_number || '-'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `;
+                        } else {
+                            paymentsHtml = '<p style="text-align: center; color: #666; margin-top: 20px;">No payments recorded for this fee.</p>';
+                        }
+
+                        printWindow.document.write(`
+                            <html>
+                            <head>
+                                <title>Fee Details - ${currentFeeData.name}</title>
+                                <style>
+                                    body { font-family: Arial, sans-serif; padding: 20px; }
+                                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+                                    .summary-box { background-color: #f9f9f9; padding: 15px; border-radius: 5px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+                                    .label { font-size: 12px; color: #666; text-transform: uppercase; }
+                                    .value { font-weight: bold; font-size: 16px; margin-top: 5px; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="header">
+                                    <h2>Fee Details Report</h2>
+                                    <h3 style="margin: 10px 0;">Student: <?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?> (<?= htmlspecialchars($student['admission_no']) ?>)</h3>
+                                    <p>Date: ${new Date().toLocaleDateString()}</p>
+                                </div>
+                                <div class="info-grid">
+                                    <div><strong>Fee Name:</strong> ${currentFeeData.name}</div>
+                                    <div><strong>Fee Type:</strong> ${currentFeeData.type}</div>
+                                    <div style="grid-column: span 2;"><strong>Description:</strong> ${currentFeeData.description}</div>
+                                </div>
+                                <div class="summary-box">
+                                    <div><div class="label">Amount</div><div class="value">${parseFloat(currentFeeData.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</div></div>
+                                    <div><div class="label">Paid</div><div class="value" style="color: green;">${parseFloat(currentFeeData.paid_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</div></div>
+                                    <div><div class="label">Balance</div><div class="value" style="color: red;">${parseFloat(currentFeeData.balance).toLocaleString('en-US', {minimumFractionDigits: 2})}</div></div>
+                                    <div><div class="label">Status</div><div class="value">${currentFeeData.status}</div></div>
+                                </div>
+                                <h3>Payment History</h3>
+                                ${paymentsHtml}
+                                <script>
+                                    setTimeout(function() {
+                                        window.print();
+                                        window.close();
+                                    }, 250);
+                                <\/script>
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.focus();
+                    }
+
+                    function exportFeeDetailsCSV() {
+                        if (!currentFeeData) return;
+
+                        let csvContent = "data:text/csv;charset=utf-8,";
+                        csvContent += "Fee Name,Type,Amount,Paid,Balance,Status\n";
+                        csvContent += `"${currentFeeData.name}","${currentFeeData.type}",${currentFeeData.amount},${currentFeeData.paid_amount},${currentFeeData.balance},"${currentFeeData.status}"\n\n`;
+                        
+                        csvContent += "Payment History\n";
+                        csvContent += "Date,Amount,Method,Reference,Remarks\n";
+                        
+                        if (currentFeeData.payments.length > 0) {
+                            currentFeeData.payments.forEach(p => {
+                                csvContent += `"${p.date}",${p.amount},"${p.payment_method || ''}","${p.reference_number || ''}","${p.remarks || ''}"\n`;
+                            });
+                        } else {
+                            csvContent += "No payments recorded\n";
+                        }
+
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", `fee_details_${currentFeeData.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                </script>
+
                 
                 <!-- Payment History Grouped by Academic Year and Term -->
                 <?php if (!empty($financialInfo['grouped_payments'])): ?>
@@ -688,22 +1134,40 @@ function exportTableToCSV(tableId, filename) {
 
 // Export Payment History Groups to CSV
 function exportPaymentHistoryGroups(containerId, filename) {
+    exportGroupedTableToCSV(containerId, filename);
+}
+
+// Generic Export Grouped Tables to CSV
+function exportGroupedTableToCSV(containerId, filename) {
     const container = document.getElementById(containerId);
     let csv = [];
     
-    // Header for the CSV
-    csv.push('"Academic Year","Term","Date","Fee","Amount","Method","Remarks"');
+    // Header for the CSV - Detect if it's payment or academic based on first table headers
+    // But simplest is to check the containerID or just export what we find
+    // For academic records: Exam, Subject, Marks, Grade
+    // For payment: Date, Fee, Amount, Method, Remarks
+    
+    // Let's try to get headers dynamically from the first table found
+    const firstTable = container.querySelector('table');
+    let headerRow = [];
+    if (firstTable) {
+        headerRow.push('"Academic Year"');
+        headerRow.push('"Term"');
+        const ths = firstTable.querySelectorAll('thead th');
+        ths.forEach(th => {
+            headerRow.push('"' + th.innerText.trim() + '"');
+        });
+        csv.push(headerRow.join(','));
+    } else {
+        // Fallback or specific handling if needed
+        csv.push('"Academic Year","Term","Date","Fee","Amount","Method","Remarks"');
+    }
     
     // Iterate through academic years (h5) and their following content
     const yearHeaders = container.querySelectorAll('h5');
     
     yearHeaders.forEach(yearHeader => {
         const year = yearHeader.innerText.trim();
-        // The container structure: h5(year) -> div(term wrapper) -> div(term header) + div(table wrapper)
-        // This structure is a bit flat in the loop, so we need to be careful. 
-        // Based on PHP loop:
-        // div.px-4.py-3 (Year)
-        // div.border-b (Term + Table)
         
         // Let's traverse the DOM relative to the year header to find sibling term sections until the next year header
         let sibling = yearHeader.parentElement.nextElementSibling;
@@ -718,7 +1182,7 @@ function exportPaymentHistoryGroups(containerId, filename) {
                     const rows = table.querySelectorAll('tbody tr');
                     rows.forEach(row => {
                         const cols = row.querySelectorAll('td');
-                        if (cols.length >= 5) {
+                        if (cols.length > 0) {
                             let rowData = [
                                 '"' + year + '"',
                                 '"' + term + '"'
@@ -740,7 +1204,7 @@ function exportPaymentHistoryGroups(containerId, filename) {
     });
     
     if (csv.length <= 1) {
-        alert('No payment history data found to export.');
+        alert('No data found to export.');
         return;
     }
     

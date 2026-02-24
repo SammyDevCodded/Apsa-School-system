@@ -131,9 +131,9 @@ $activeTab = $_GET['tab'] ?? 'structures';
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="/fees/<?= $fee['id'] ?>" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                        <button type="button" onclick="viewFeeStructure(<?= $fee['id'] ?>)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             View
-                                        </a>
+                                        </button>
                                         <a href="/fees/<?= $fee['id'] ?>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             Edit
                                         </a>
@@ -412,6 +412,47 @@ $activeTab = $_GET['tab'] ?? 'structures';
                             Print Receipt
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- View Fee Structure Modal -->
+        <div id="view-fee-structure-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+            <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 max-w-4xl shadow-lg rounded-md bg-white max-h-[90vh] flex flex-col">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h3 class="text-xl font-medium text-gray-900">Fee Structure Details</h3>
+                    <div class="flex items-center gap-2">
+                        <a id="modal-fee-edit-link" href="#" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                            Edit
+                        </a>
+                        <button onclick="document.getElementById('view-fee-structure-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500">
+                            <span class="text-2xl">&times;</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="view-fee-structure-content" class="mt-2 overflow-y-auto flex-1">
+                    <div class="animate-pulse flex space-x-4">
+                        <div class="flex-1 space-y-4 py-1">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div class="space-y-2">
+                                <div class="h-4 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end gap-3 flex-shrink-0">
+                    <button id="print-fee-structure-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                        </svg>
+                        Print Details
+                    </button>
+                    <button onclick="document.getElementById('view-fee-structure-modal').classList.add('hidden')" class="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
@@ -2063,6 +2104,228 @@ function openStudentFinancialModal(studentId) {
     // Redirect to student profile with financial tab active
     window.location.href = `/students/${studentId}?tab=financial`;
 }
+// Function to view fee structure details
+function viewFeeStructure(feeId) {
+    const modal = document.getElementById('view-fee-structure-modal');
+    const content = document.getElementById('view-fee-structure-content');
+    const editLink = document.getElementById('modal-fee-edit-link');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    content.innerHTML = `
+        <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-4 py-1">
+                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="space-y-2">
+                    <div class="h-4 bg-gray-200 rounded"></div>
+                    <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Set edit link href
+    editLink.href = `/fees/${feeId}/edit`;
+    
+    // Fetch fee details via AJAX
+    fetch(`/fees/${feeId}?students=1`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.fee) {
+            const fee = data.fee;
+            const students = data.students || [];
+            const classes = data.classes || [];
+            
+            // Format fee type
+            let typeHtml = '';
+            switch(fee.type) {
+                case 'tuition': typeHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Tuition</span>'; break;
+                case 'transport': typeHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Transport</span>'; break;
+                case 'feeding': typeHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Feeding</span>'; break;
+                default: typeHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">' + fee.type.charAt(0).toUpperCase() + fee.type.slice(1) + '</span>';
+            }
+            
+            // Format classes
+            let classesHtml = '<span class="text-gray-500">No classes assigned</span>';
+            if (classes.length > 0) {
+                classesHtml = classes.map(c => c.name).join(', ');
+            }
+            
+            // Students table logic
+            let studentsHtml = '';
+            if (students.length === 0) {
+                studentsHtml = `
+                    <div class="px-4 py-5 sm:p-6 text-center">
+                        <p class="text-gray-500">No students assigned to this fee structure yet.</p>
+                        <div class="mt-4">
+                            <a href="/fees/${fee.id}/assign" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                Assign Students
+                            </a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                let rows = students.map(s => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.first_name} ${s.last_name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.admission_no}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${s.class_name || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(s.assigned_date).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+                
+                studentsHtml = `
+                    <div class="overflow-x-auto border-t border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission No</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            content.innerHTML = `
+                <div class="border-t border-gray-200 mt-2">
+                    <dl>
+                        <div class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">Name</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${fee.name}</dd>
+                        </div>
+                        <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">₵${parseFloat(fee.amount).toFixed(2).replace(/\\d(?=(\\d{3})+\\.)/g, '$&,')}</dd>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">Type</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${typeHtml}</dd>
+                        </div>
+                        <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">Class(es)</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${classesHtml}</dd>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-gray-500">Description</dt>
+                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${fee.description || 'N/A'}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div class="mt-4 border border-gray-200 rounded-md overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <h4 class="text-md font-medium text-gray-900">Assigned Students</h4>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ${students.length} students
+                        </span>
+                    </div>
+                    ${studentsHtml}
+                </div>
+            `;
+        } else {
+            content.innerHTML = '<p class="text-red-500">Failed to load fee structure details.</p>';
+        }
+    })
+    .catch(error => {
+        content.innerHTML = '<p class="text-red-500">Error loading details. Please try again.</p>';
+        console.error('Error fetching fee details:', error);
+    });
+}
+
+// Add print functionality for the Fee Structure Modal
+document.addEventListener('DOMContentLoaded', function() {
+    const printBtn = document.getElementById('print-fee-structure-btn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            const content = document.getElementById('view-fee-structure-content').innerHTML;
+            const feeName = document.querySelector('#view-fee-structure-modal h3').textContent || 'Fee Structure Details';
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>Print - ${feeName}</title>
+                        <style>
+                            body { 
+                                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                                           'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+                                margin: 0;
+                                padding: 20px;
+                                color: #111827;
+                                background-color: white;
+                            }
+                            h3 { font-size: 1.5rem; margin-bottom: 20px; text-align: center; }
+                            
+                            /* Maintain basic layout */
+                            .grid { display: grid; }
+                            .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                            .gap-4 { gap: 1rem; }
+                            
+                            /* Clean borders and padding */
+                            .border-t { border-top: 1px solid #e5e7eb; }
+                            .border-b { border-bottom: 1px solid #e5e7eb; }
+                            dl > div { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+                            
+                            /* Typography */
+                            .text-sm { font-size: 0.875rem; }
+                            .text-md { font-size: 1rem; }
+                            .font-medium { font-weight: 500; text-transform: uppercase; color: #6b7280; }
+                            .text-gray-900 { color: #111827; }
+                            .text-gray-500 { color: #6b7280; }
+                            
+                            /* Table Styles */
+                            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                            th, td { padding: 10px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+                            th { font-weight: 600; color: #4b5563; text-transform: uppercase; font-size: 0.75rem; background-color: #f9fafb; border-top: 1px solid #e5e7eb; }
+                            td { font-size: 0.875rem; }
+                            
+                            /* Hide loading states and interactive elements */
+                            .animate-pulse { display: none; }
+                            a, button { display: none !important; }
+                            
+                            /* Label styling */
+                            .bg-blue-100, .bg-green-100, .bg-yellow-100, .bg-gray-100 { 
+                                padding: 2px 8px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem;
+                                display: inline-block; border: 1px solid #d1d5db;
+                            }
+                            
+                            .mt-4 { margin-top: 1.5rem; }
+                            .mt-1 { margin-top: 0.25rem; }
+                            
+                            @media print {
+                                body { padding: 0; }
+                                @page { margin: 1.5cm; }
+                                * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h3>${feeName}</h3>
+                        ${content}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(function() { window.print(); }, 500);
+                            }
+                        <\/script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        });
+    }
+});
 </script>
 
 <?php 

@@ -180,6 +180,22 @@ class FeeAssignment extends Model
     }
 
     /**
+     * Get count of students assigned to a fee who belong to a specific class
+     */
+    public function getCountByFeeAndClass($feeId, $classId)
+    {
+        $sql = "SELECT COUNT(fa.id) as count
+                FROM {$this->table} fa
+                JOIN students s ON fa.student_id = s.id
+                WHERE fa.fee_id = :fee_id AND s.class_id = :class_id";
+        $result = $this->db->fetchOne($sql, [
+            'fee_id' => $feeId,
+            'class_id' => $classId
+        ]);
+        return $result['count'] ?? 0;
+    }
+
+    /**
      * Get all student bills (assignments) with details and filters
      */
     public function getAllStudentBills($page = 1, $perPage = 10, $filters = [], $searchTerm = '')
@@ -209,12 +225,15 @@ class FeeAssignment extends Model
         // Search Term
         if (!empty($searchTerm)) {
             $whereClause .= " AND (
-                s.first_name LIKE :search 
-                OR s.last_name LIKE :search 
-                OR s.admission_no LIKE :search 
-                OR f.name LIKE :search
+                s.first_name LIKE :search1 
+                OR s.last_name LIKE :search2 
+                OR s.admission_no LIKE :search3 
+                OR f.name LIKE :search4
             )";
-            $params['search'] = "%{$searchTerm}%";
+            $params['search1'] = "%{$searchTerm}%";
+            $params['search2'] = "%{$searchTerm}%";
+            $params['search3'] = "%{$searchTerm}%";
+            $params['search4'] = "%{$searchTerm}%";
         }
 
         // Main Query

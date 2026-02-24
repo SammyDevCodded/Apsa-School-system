@@ -16,12 +16,26 @@ class Setting extends Model
         'watermark_position',
         'watermark_transparency',
         'student_admission_prefix',
-        'staff_employee_prefix'
+        'student_admission_prefix',
+        'staff_employee_prefix',
+        'time_offset_seconds'
     ];
 
     public function __construct()
     {
         parent::__construct();
+    }
+    
+    /**
+     * Get the current system time adjusted by the offset
+     * 
+     * @return int Unix timestamp
+     */
+    public function getCurrentTime()
+    {
+        $settings = $this->getSettings();
+        $offset = $settings['time_offset_seconds'] ?? 0;
+        return time() + $offset;
     }
 
     public function getSettings()

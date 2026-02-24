@@ -25,7 +25,7 @@ ob_start();
                         Date Picker
                     </button>
                     <button data-tab="history" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 font-medium text-sm">
-                        Recent History
+                        History
                     </button>
                 </nav>
             </div>
@@ -91,9 +91,70 @@ ob_start();
         <div id="history-tab" class="tab-content hidden">
             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                 <div class="px-4 py-5 sm:p-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Attendance Records</h3>
-                    <?php if (empty($recentAttendance)): ?>
-                        <p class="text-center text-gray-500">No recent attendance records found.</p>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Attendance History</h3>
+                    
+                    <!-- Filter Form -->
+                    <div class="mb-6 bg-gray-50 p-4 rounded-md">
+                        <form method="GET" action="/attendance" class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                            <!-- Ensure we stay on the history tab -->
+                            <input type="hidden" name="tab" value="history">
+                            
+                            <!-- Class Filter -->
+                            <div class="sm:col-span-2">
+                                <label for="history_class_id" class="block text-sm font-medium text-gray-700">Class</label>
+                                <select id="history_class_id" name="history_class_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="">All Classes</option>
+                                    <?php foreach ($classes as $class): ?>
+                                        <option value="<?= $class['id'] ?>" <?= ($filters['class_id'] == $class['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($class['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            
+                            <!-- Student Filter -->
+                            <div class="sm:col-span-2">
+                                <label for="history_student" class="block text-sm font-medium text-gray-700">Student Name/ID</label>
+                                <input type="text" name="history_student" id="history_student" value="<?= htmlspecialchars($filters['student']) ?>" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Search student...">
+                            </div>
+                            
+                            <!-- Period Filter -->
+                            <div class="sm:col-span-2">
+                                <label for="history_period" class="block text-sm font-medium text-gray-700">Period</label>
+                                <select id="history_period" name="history_period" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="today" <?= ($filters['period'] == 'today') ? 'selected' : '' ?>>Today</option>
+                                    <option value="week" <?= ($filters['period'] == 'week') ? 'selected' : '' ?>>This Week</option>
+                                    <option value="month" <?= ($filters['period'] == 'month') ? 'selected' : '' ?>>This Month</option>
+                                    <option value="year" <?= ($filters['period'] == 'year') ? 'selected' : '' ?>>Current Academic Year</option>
+                                    <option value="custom" <?= ($filters['period'] == 'custom') ? 'selected' : '' ?>>Custom Range</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Custom Date Range (Hidden by default) -->
+                            <div id="custom_date_range" class="sm:col-span-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 <?= ($filters['period'] == 'custom') ? '' : 'hidden' ?>">
+                                <div class="sm:col-span-3">
+                                    <label for="history_start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                                    <input type="date" name="history_start_date" id="history_start_date" value="<?= htmlspecialchars($filters['start_date']) ?>" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <div class="sm:col-span-3">
+                                    <label for="history_end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                                    <input type="date" name="history_end_date" id="history_end_date" value="<?= htmlspecialchars($filters['end_date']) ?>" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                            
+                            <div class="sm:col-span-6 flex justify-end">
+                                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Filter History
+                                </button>
+                                <a href="/attendance?tab=history" class="ml-3 inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Reset
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <?php if (empty($historyRecords)): ?>
+                        <p class="text-center text-gray-500">No attendance records found matching your filters.</p>
                     <?php else: ?>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -114,7 +175,7 @@ ob_start();
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <?php foreach ($recentAttendance as $record): ?>
+                                    <?php foreach ($historyRecords as $record): ?>
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 <?= date('M j, Y', strtotime($record['date'])) ?>
@@ -262,6 +323,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const attendanceDates = <?php echo json_encode(array_column($attendanceDates ?? [], 'date')); ?>;
     const selectedMonth = '<?php echo $selectedMonth; ?>';
     initializeCalendar(selectedMonth, attendanceDates);
+    
+    // History Period Filter Toggle
+    const historyPeriodSelect = document.getElementById('history_period');
+    const customDateRangeDiv = document.getElementById('custom_date_range');
+    
+    if (historyPeriodSelect) {
+        historyPeriodSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRangeDiv.classList.remove('hidden');
+            } else {
+                customDateRangeDiv.classList.add('hidden');
+            }
+        });
+    }
 });
 
 function initializeCalendar(selectedMonth, attendanceDates) {

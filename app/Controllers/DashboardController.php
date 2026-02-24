@@ -86,7 +86,8 @@ class DashboardController extends Controller
             'monthlyRevenue' => $monthlyRevenue,
             'currency' => $currency,
             'daysRemaining' => $daysRemaining,
-            'currentAcademicYear' => $currentAcademicYear
+            'currentAcademicYear' => $currentAcademicYear,
+            'currentDateTime' => $settingModel->getCurrentTime()
         ];
         
         $this->view('dashboard/index', $data);

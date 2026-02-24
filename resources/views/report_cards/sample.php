@@ -267,7 +267,14 @@ if ($isSample) {
                             <?php if ($showTeacherSignature): ?>
                             <div class="teacher-signature">
                                 <p>Class Teacher</p>
-                                <div class="h-12 border-b border-gray-300 mt-8"></div>
+                                <?php if (!empty($settings['teacher_signature'])): ?>
+                                    <div class="h-12 mb-1 flex items-end justify-center">
+                                        <img src="<?= htmlspecialchars($settings['teacher_signature']) ?>" alt="Signature" class="h-12 object-contain">
+                                    </div>
+                                    <div class="border-b border-gray-300"></div>
+                                <?php else: ?>
+                                    <div class="h-12 border-b border-gray-300 mt-8"></div>
+                                <?php endif; ?>
                                 <p class="mt-1">Signature</p>
                             </div>
                             <?php endif; ?>
@@ -275,7 +282,14 @@ if ($isSample) {
                             <?php if ($showHeadteacherSignature): ?>
                             <div class="headteacher-signature">
                                 <p>Head Teacher</p>
-                                <div class="h-12 border-b border-gray-300 mt-8"></div>
+                                <?php if (!empty($settings['headteacher_signature'])): ?>
+                                    <div class="h-12 mb-1 flex items-end justify-center">
+                                        <img src="<?= htmlspecialchars($settings['headteacher_signature']) ?>" alt="Signature" class="h-12 object-contain">
+                                    </div>
+                                    <div class="border-b border-gray-300"></div>
+                                <?php else: ?>
+                                    <div class="h-12 border-b border-gray-300 mt-8"></div>
+                                <?php endif; ?>
                                 <p class="mt-1">Signature</p>
                             </div>
                             <?php endif; ?>

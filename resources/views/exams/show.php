@@ -123,5 +123,9 @@ function closeViewModal() {
 
 <?php 
 $content = ob_get_clean();
-include RESOURCES_PATH . '/layouts/app.php';
+if (isset($isAjax) && $isAjax) {
+    echo $content;
+} else {
+    include RESOURCES_PATH . '/layouts/app.php';
+}
 ?>

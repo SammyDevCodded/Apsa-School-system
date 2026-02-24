@@ -181,6 +181,46 @@ ob_start();
                                         <p class="text-gray-500">All audit log records</p>
                                     </div>
                                 </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="portal_sessions" name="sections[]" type="checkbox" value="portal_sessions" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="portal_sessions" class="font-medium text-gray-700">Portal Sessions</label>
+                                        <p class="text-gray-500">All student and parent portal active sessions</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="portal_notifications" name="sections[]" type="checkbox" value="portal_notifications" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="portal_notifications" class="font-medium text-gray-700">Portal Notifications</label>
+                                        <p class="text-gray-500">All portal-specific alerts and notifications</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="receipts" name="sections[]" type="checkbox" value="receipts" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="receipts" class="font-medium text-gray-700">Receipts</label>
+                                        <p class="text-gray-500">All financial transaction receipts</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="student_promotions" name="sections[]" type="checkbox" value="student_promotions" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="student_promotions" class="font-medium text-gray-700">Student Promotions</label>
+                                        <p class="text-gray-500">All historical student promotion and demotion records</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         

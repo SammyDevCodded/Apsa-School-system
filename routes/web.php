@@ -143,10 +143,11 @@ $router->post('/academic_years/([0-9]+)/update_status', 'AcademicYearController@
 $router->post('/academic_years/update_term', 'AcademicYearController@updateTerm', ['auth']);
 
 // School Database routes (require authentication)
-$router->get('/school-database', 'SchoolDatabaseController@index', ['auth']);
+$router->get('/school-database', 'ArchiveController@index', ['auth']);
 
 // Timetable routes (require authentication)
 $router->get('/timetables', 'TimetableController@index', ['auth']);
+$router->get('/timetables/print', 'TimetableController@print', ['auth']); // Add print route first
 $router->get('/timetables/create', 'TimetableController@create', ['auth']);
 $router->post('/timetables', 'TimetableController@store', ['auth']);
 $router->get('/timetables/([0-9]+)/edit', 'TimetableController@edit', ['auth']);
@@ -316,6 +317,11 @@ $router->get('/portal/parent/fees', 'Portal\ParentController@fees');
 
 // Staff Portal Routes
 $router->get('/portal/staff/dashboard', 'Portal\StaffPortalController@dashboard');
+$router->get('/portal/staff/timetable', 'Portal\StaffPortalController@timetable');
+$router->get('/portal/staff/academics', 'Portal\StaffPortalController@academics');
+$router->get('/portal/staff/profile-data', 'Portal\StaffPortalController@getProfileData');
+$router->get('/portal/staff/subjects-data', 'Portal\StaffPortalController@getSubjectsData');
+$router->get('/portal/staff/timetable-data', 'Portal\StaffPortalController@getTimetableData');
 
 // About route (require authentication)
 $router->get('/about', 'AboutController@index', ['auth']);

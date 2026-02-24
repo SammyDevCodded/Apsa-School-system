@@ -20,6 +20,9 @@ ob_start();
                 </h3>
                 <p class="mt-1 max-w-2xl text-sm text-gray-500">
                     Review the data before importing. <?= count($data ?? []) ?> records found.
+                    <?php if (isset($duplicateCount) && $duplicateCount > 0): ?>
+                        <span class="text-red-600 font-medium ml-2">(<?= $duplicateCount ?> potential duplicates detected)</span>
+                    <?php endif; ?>
                 </p>
             </div>
             <div class="border-t border-gray-200">
@@ -33,8 +36,12 @@ ob_start();
                             <thead class="bg-gray-50">
                                 <tr>
                                     <?php 
-                                    // Get headers from the first row
-                                    $headers = array_keys($data[0] ?? []);
+                                    // Get headers from the first row, filtering out internal tracking keys
+                                    $allKeys = array_keys($data[0] ?? []);
+                                    $headers = array_filter($allKeys, function($key) {
+                                        return $key !== '_is_duplicate';
+                                    });
+                                    
                                     foreach ($headers as $header): 
                                     ?>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -44,14 +51,29 @@ ob_start();
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($data as $index => $row): ?>
-                                    <tr>
-                                        <?php foreach ($headers as $header): ?>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <?= htmlspecialchars($row[$header] ?? '') ?>
-                                            </td>
-                                        <?php endforeach; ?>
-                                    </tr>
+                                <?php foreach ($data as $index => $row): 
+                                        $isDuplicate = !empty($row['_is_duplicate']);
+                                    ?>
+                                        <tr class="<?= $isDuplicate ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50' ?>">
+                                            <?php 
+                                            $firstCol = true;
+                                            foreach ($headers as $header): 
+                                            ?>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    <div class="flex items-center">
+                                                        <?= htmlspecialchars($row[$header] ?? '') ?>
+                                                        <?php if ($firstCol && $isDuplicate): ?>
+                                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                                Duplicate
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            <?php 
+                                            $firstCol = false;
+                                            endforeach; 
+                                            ?>
+                                        </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>

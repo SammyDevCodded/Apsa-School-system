@@ -40,26 +40,52 @@ class Fee extends Model
                 LEFT JOIN classes c ON f.class_id = c.id";
         $fees = $this->db->fetchAll($sql);
         
-        // For each fee, get the original class names
         $classModel = new ClassModel();
+        $feeAssignmentModel = new FeeAssignment();
+        $studentModel = new Student();
+        
+        $classTotalCache = [];
+
         foreach ($fees as &$fee) {
+            $assignedClasses = [];
+
+            // 1. Get original classes defined at fee creation
             $originalClassIds = $this->getOriginalClasses($fee['id']);
             if (!empty($originalClassIds)) {
-                $classNames = [];
-                foreach ($originalClassIds as $classId) {
-                    $class = $classModel->find($classId);
-                    if ($class) {
-                        $classNames[] = $class['name'];
+                foreach ($originalClassIds as $cId) {
+                    $assignedClasses[(int)$cId] = true;
+                }
+            }
+            
+            // 2. Get dynamically assigned classes based on student assignments
+            $dynamicClasses = $feeAssignmentModel->getClassesByFeeId($fee['id']);
+            foreach ($dynamicClasses as $dynClass) {
+                $assignedClasses[(int)$dynClass['id']] = true;
+            }
+
+            // Build the display string
+            $classDisplayTexts = [];
+            foreach (array_keys($assignedClasses) as $classId) {
+                $class = $classModel->find($classId);
+                if ($class) {
+                    if (!isset($classTotalCache[$classId])) {
+                        $classTotalCache[$classId] = $studentModel->getCountByClassId($classId);
+                    }
+                    
+                    $totalStudents = $classTotalCache[$classId];
+                    $assignedToFee = $feeAssignmentModel->getCountByFeeAndClass($fee['id'], $classId);
+                    
+                    if ($totalStudents == 0 || $assignedToFee == $totalStudents) {
+                        $classDisplayTexts[] = $class['name'];
+                    } else {
+                        $classDisplayTexts[] = sprintf('%s (%d of %d)', $class['name'], $assignedToFee, $totalStudents);
                     }
                 }
-                // If we have original classes, use them instead of the old class_name
-                if (!empty($classNames)) {
-                    $fee['display_classes'] = implode(', ', $classNames);
-                } else {
-                    $fee['display_classes'] = 'No classes assigned';
-                }
+            }
+
+            if (!empty($classDisplayTexts)) {
+                $fee['display_classes'] = implode(', ', $classDisplayTexts);
             } else {
-                // Fallback to the old class_name field
                 $fee['display_classes'] = $fee['class_name'] ?? 'All Classes';
             }
         }
@@ -109,6 +135,37 @@ class Fee extends Model
     }
     
     /**
+     * Get all fees assigned to a specific class (either primarily or via original_classes)
+     */
+    public function getFeesByClassId($classId)
+    {
+        $allFees = $this->all();
+        $classFees = [];
+        
+        foreach ($allFees as $fee) {
+            $isForClass = false;
+            // Check primary class_id
+            if ($fee['class_id'] == $classId) {
+                $isForClass = true;
+            } 
+            // Check original_classes JSON array
+            else if (!empty($fee['original_classes'])) {
+                $originalClasses = json_decode($fee['original_classes'], true) ?: [];
+                if (in_array((string)$classId, $originalClasses) || in_array((int)$classId, $originalClasses)) {
+                    $isForClass = true;
+                }
+            }
+            
+            if ($isForClass) {
+                // Ensure the fee is active for the current academic year/term (if applicable)
+                $classFees[] = $fee;
+            }
+        }
+        
+        return $classFees;
+    }
+    
+    /**
      * Get count of students assigned to a fee
      */
     public function getAssignedStudentCount($feeId)
@@ -130,30 +187,59 @@ class Fee extends Model
                 LEFT JOIN classes c ON f.class_id = c.id";
         $fees = $this->db->fetchAll($sql);
         
-        // For each fee, get the original class names and student count
         $classModel = new ClassModel();
         $feeAssignmentModel = new FeeAssignment();
+        $studentModel = new Student();
+        
+        // Cache to prevent repetitive global count queries for the same class
+        $classTotalCache = [];
+
         foreach ($fees as &$fee) {
-            // Get student count for this fee
+            // Get overall student count for this fee
             $fee['student_count'] = $feeAssignmentModel->getCountByFeeId($fee['id']);
             
+            $assignedClasses = [];
+
+            // 1. Get original classes defined at fee creation
             $originalClassIds = $this->getOriginalClasses($fee['id']);
             if (!empty($originalClassIds)) {
-                $classNames = [];
-                foreach ($originalClassIds as $classId) {
-                    $class = $classModel->find($classId);
-                    if ($class) {
-                        $classNames[] = $class['name'];
+                foreach ($originalClassIds as $cId) {
+                    $assignedClasses[(int)$cId] = true;
+                }
+            }
+            
+            // 2. Get dynamically assigned classes based on student assignments
+            $dynamicClasses = $feeAssignmentModel->getClassesByFeeId($fee['id']);
+            foreach ($dynamicClasses as $dynClass) {
+                $assignedClasses[(int)$dynClass['id']] = true;
+            }
+
+            // Build the display string
+            $classDisplayTexts = [];
+            foreach (array_keys($assignedClasses) as $classId) {
+                $class = $classModel->find($classId);
+                if ($class) {
+                    // Check if we already cached the total students in this class
+                    if (!isset($classTotalCache[$classId])) {
+                        $classTotalCache[$classId] = $studentModel->getCountByClassId($classId);
+                    }
+                    
+                    $totalStudents = $classTotalCache[$classId];
+                    $assignedToFee = $feeAssignmentModel->getCountByFeeAndClass($fee['id'], $classId);
+                    
+                    if ($totalStudents == 0 || $assignedToFee == $totalStudents) {
+                        // Class is empty, OR everyone is assigned -> Just show "Class Name"
+                        $classDisplayTexts[] = $class['name'];
+                    } else {
+                        // Partial assignment -> Show "Class Name (X of Y)"
+                        $classDisplayTexts[] = sprintf('%s (%d of %d)', $class['name'], $assignedToFee, $totalStudents);
                     }
                 }
-                // If we have original classes, use them instead of the old class_name
-                if (!empty($classNames)) {
-                    $fee['display_classes'] = implode(', ', $classNames);
-                } else {
-                    $fee['display_classes'] = 'No classes assigned';
-                }
+            }
+
+            if (!empty($classDisplayTexts)) {
+                $fee['display_classes'] = implode(', ', $classDisplayTexts);
             } else {
-                // Fallback to the old class_name field
                 $fee['display_classes'] = $fee['class_name'] ?? 'All Classes';
             }
         }

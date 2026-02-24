@@ -340,100 +340,163 @@ class ClassesController extends Controller
             'total_paid' => 0,
             'total_balance' => 0,
             'fee_defaulters' => [],
-            'payment_summary' => []
+            'termly_breakdown' => []
         ];
         
-        // Get fee assignments for this class
-        $feeAssignmentModel = new \App\Models\FeeAssignment();
-        $studentModel = new Student();
-        $paymentModel = new \App\Models\Payment();
         $feeModel = new \App\Models\Fee();
+        $feeAssignmentModel = new \App\Models\FeeAssignment();
+        $paymentModel = new \App\Models\Payment();
+        $academicYearModel = new \App\Models\AcademicYear();
+        $studentModel = new \App\Models\Student();
         
-        // Get students in this class
-        $students = $studentModel->getByClassId($classId);
-        $studentIds = array_column($students, 'id');
+        // 1. Get all fees for this class (including those assigned via original_classes)
+        $allFees = $feeModel->all();
+        $classFees = [];
         
-        if (empty($studentIds)) {
+        $academicYears = [];
+        foreach ($academicYearModel->getAll() as $ay) {
+            $academicYears[$ay['id']] = $ay['name'];
+        }
+        
+        foreach ($allFees as $fee) {
+            $isForClass = false;
+            if ($fee['class_id'] == $classId) {
+                $isForClass = true;
+            } else if (!empty($fee['original_classes'])) {
+                $originalClasses = json_decode($fee['original_classes'], true) ?: [];
+                if (in_array((string)$classId, $originalClasses) || in_array((int)$classId, $originalClasses)) {
+                    $isForClass = true;
+                }
+            }
+            
+            if ($isForClass) {
+                $classFees[] = $fee;
+            }
+        }
+        
+        if (empty($classFees)) {
             return $financialStats;
         }
         
-        // Get all fee assignments for these students
-        $assignments = [];
-        foreach ($studentIds as $studentId) {
-            $studentAssignments = $feeAssignmentModel->getByStudentId($studentId);
-            $assignments = array_merge($assignments, $studentAssignments);
+        // 2. Gather all relevant student IDs and assignments
+        $allStudentIds = [];
+        $feeAssignmentsByFee = [];
+        foreach ($classFees as $fee) {
+            $assignments = $feeAssignmentModel->getByFeeId($fee['id']);
+            $feeAssignmentsByFee[$fee['id']] = $assignments;
+            foreach ($assignments as $assignment) {
+                $allStudentIds[$assignment['student_id']] = true;
+            }
+        }
+        $allStudentIds = array_keys($allStudentIds);
+        
+        // Fetch all students associated with these fees to avoid N+1 queries
+        $studentInfoMap = [];
+        $paymentsByStudentAndFee = [];
+        
+        foreach ($allStudentIds as $studentId) {
+            $student = $studentModel->find($studentId);
+            if ($student) {
+                $studentInfoMap[$studentId] = $student;
+            }
+            
+            // Get all payments for this student
+            $studentPayments = $paymentModel->getByStudentId($studentId);
+            $paymentsByStudentAndFee[$studentId] = [];
+            foreach ($studentPayments as $payment) {
+                $feeId = $payment['fee_id'];
+                if (!isset($paymentsByStudentAndFee[$studentId][$feeId])) {
+                    $paymentsByStudentAndFee[$studentId][$feeId] = 0;
+                }
+                $paymentsByStudentAndFee[$studentId][$feeId] += ($payment['amount'] ?? 0);
+            }
         }
         
-        // Get student information for all students in this class
-        $studentInfoMap = [];
-        foreach ($students as $student) {
-            $studentInfoMap[$student['id']] = [
-                'first_name' => $student['first_name'] ?? 'Unknown',
-                'last_name' => $student['last_name'] ?? 'Student',
-                'admission_no' => $student['admission_no'] ?? 'N/A'
+        $studentBalances = [];
+        
+        // 3. Process each fee to build the termly breakdown
+        foreach ($classFees as $fee) {
+            $feeId = $fee['id'];
+            $yearName = isset($academicYears[$fee['academic_year_id']]) ? $academicYears[$fee['academic_year_id']] : 'Unknown Year';
+            $term = !empty($fee['term']) ? $fee['term'] : 'Unknown Term';
+            
+            if (!isset($financialStats['termly_breakdown'][$yearName])) {
+                $financialStats['termly_breakdown'][$yearName] = [];
+            }
+            if (!isset($financialStats['termly_breakdown'][$yearName][$term])) {
+                $financialStats['termly_breakdown'][$yearName][$term] = [
+                    'total_billed' => 0,
+                    'total_paid' => 0,
+                    'balance' => 0,
+                    'fees' => []
+                ];
+            }
+            
+            $assignments = $feeAssignmentsByFee[$feeId] ?? [];
+            $feeAmount = $fee['amount'] ?? 0;
+            
+            $feeBilled = 0;
+            $feePaid = 0;
+            
+            foreach ($assignments as $assignment) {
+                $studentId = $assignment['student_id'];
+                $student = $studentInfoMap[$studentId] ?? null;
+                
+                // CRITICAL FIX: Only aggregate financial stats for students currently explicitly assigned to THIS class
+                if (!$student || $student['class_id'] != $classId) {
+                    continue;
+                }
+                
+                // Add to billed
+                $feeBilled += $feeAmount;
+                $financialStats['total_bills'] += $feeAmount;
+                
+                // Initialize student balance tracking
+                if (!isset($studentBalances[$studentId])) {
+                    $student = $studentInfoMap[$studentId] ?? [];
+                    $studentBalances[$studentId] = [
+                        'student_info' => [
+                            'id' => $studentId,
+                            'first_name' => $student['first_name'] ?? 'Unknown',
+                            'last_name' => $student['last_name'] ?? 'Student',
+                            'admission_no' => $student['admission_no'] ?? 'N/A'
+                        ],
+                        'total_billed' => 0,
+                        'total_paid' => 0,
+                        'balance' => 0
+                    ];
+                }
+                $studentBalances[$studentId]['total_billed'] += $feeAmount;
+                
+                // Add corresponding payments
+                $paidForThisFee = $paymentsByStudentAndFee[$studentId][$feeId] ?? 0;
+                $feePaid += $paidForThisFee;
+                $financialStats['total_paid'] += $paidForThisFee;
+                $studentBalances[$studentId]['total_paid'] += $paidForThisFee;
+            }
+            
+            $feeBalance = $feeBilled - $feePaid;
+            
+            $financialStats['termly_breakdown'][$yearName][$term]['total_billed'] += $feeBilled;
+            $financialStats['termly_breakdown'][$yearName][$term]['total_paid'] += $feePaid;
+            $financialStats['termly_breakdown'][$yearName][$term]['balance'] += $feeBalance;
+            $financialStats['termly_breakdown'][$yearName][$term]['fees'][] = [
+                'name' => $fee['name'],
+                'billed' => $feeBilled,
+                'paid' => $feePaid,
+                'balance' => $feeBalance
             ];
         }
         
-        // Calculate totals
-        $studentBalances = [];
-        foreach ($assignments as $assignment) {
-            $studentId = $assignment['student_id'];
-            $feeAmount = $assignment['fee_amount'] ?? 0;
-            
-            if (!isset($studentBalances[$studentId])) {
-                $studentInfo = $studentInfoMap[$studentId] ?? [
-                    'first_name' => 'Unknown',
-                    'last_name' => 'Student',
-                    'admission_no' => 'N/A'
-                ];
-                
-                $studentBalances[$studentId] = [
-                    'student_info' => [
-                        'id' => $studentId,
-                        'first_name' => $studentInfo['first_name'],
-                        'last_name' => $studentInfo['last_name'],
-                        'admission_no' => $studentInfo['admission_no']
-                    ],
-                    'total_billed' => 0,
-                    'total_paid' => 0,
-                    'balance' => 0
-                ];
-            }
-            
-            $studentBalances[$studentId]['total_billed'] += $feeAmount;
-            $financialStats['total_bills'] += $feeAmount;
-        }
+        // Calculate total balance and identify defaulters
+        $financialStats['total_balance'] = $financialStats['total_bills'] - $financialStats['total_paid'];
         
-        // Get payments for these students
-        $payments = [];
-        foreach ($studentIds as $studentId) {
-            $studentPayments = $paymentModel->getByStudentId($studentId);
-            $payments = array_merge($payments, $studentPayments);
-        }
-        
-        // Calculate payments
-        foreach ($payments as $payment) {
-            $studentId = $payment['student_id'];
-            $amount = $payment['amount'] ?? 0;
-            
-            if (isset($studentBalances[$studentId])) {
-                $studentBalances[$studentId]['total_paid'] += $amount;
-                $financialStats['total_paid'] += $amount;
-            }
-        }
-        
-        // Calculate balances and identify defaulters
         foreach ($studentBalances as $studentId => $balanceInfo) {
             $balanceInfo['balance'] = $balanceInfo['total_billed'] - $balanceInfo['total_paid'];
-            $studentBalances[$studentId] = $balanceInfo;
-            
             if ($balanceInfo['balance'] > 0) {
                 $financialStats['fee_defaulters'][] = $balanceInfo;
             }
         }
-        
-        $financialStats['total_balance'] = $financialStats['total_bills'] - $financialStats['total_paid'];
-        $financialStats['student_balances'] = $studentBalances;
         
         // Sort defaulters by balance (highest first)
         usort($financialStats['fee_defaulters'], function($a, $b) {
@@ -447,62 +510,69 @@ class ClassesController extends Controller
     {
         $termPerformance = [];
         
-        // Group exams by term
+        // Group exams by academic year and term
         $examsByTerm = [];
         foreach ($exams as $exam) {
-            $term = $exam['term'] ?? 'Unknown';
-            if (!isset($examsByTerm[$term])) {
-                $examsByTerm[$term] = [];
+            $year = $exam['academic_year_name'] ?? 'Unknown Academic Year';
+            $term = $exam['term'] ?? 'Unknown Term';
+            if (!isset($examsByTerm[$year])) {
+                $examsByTerm[$year] = [];
             }
-            $examsByTerm[$term][] = $exam;
+            if (!isset($examsByTerm[$year][$term])) {
+                $examsByTerm[$year][$term] = [];
+            }
+            $examsByTerm[$year][$term][] = $exam;
         }
         
         // Calculate performance for each term
-        foreach ($examsByTerm as $term => $termExams) {
-            $termResults = [];
-            $termExamIds = array_column($termExams, 'id');
-            
-            // Filter results for this term's exams
-            foreach ($examResults as $result) {
-                if (in_array($result['exam_id'], $termExamIds)) {
-                    $termResults[] = $result;
-                }
-            }
-            
-            if (!empty($termResults)) {
-                // Calculate averages
-                $totalMarks = array_sum(array_column($termResults, 'marks'));
-                $totalResults = count($termResults);
-                $average = $totalResults > 0 ? round($totalMarks / $totalResults, 2) : 0;
+        foreach ($examsByTerm as $year => $yearExams) {
+            $termPerformance[$year] = [];
+            foreach ($yearExams as $term => $termExams) {
+                $termResults = [];
+                $termExamIds = array_column($termExams, 'id');
                 
-                // Group by subject
-                $subjectPerformance = [];
-                $resultsBySubject = [];
-                foreach ($termResults as $result) {
-                    $subject = $result['subject_name'] ?? 'Unknown';
-                    if (!isset($resultsBySubject[$subject])) {
-                        $resultsBySubject[$subject] = [];
+                // Filter results for this term's exams
+                foreach ($examResults as $result) {
+                    if (in_array($result['exam_id'], $termExamIds)) {
+                        $termResults[] = $result;
                     }
-                    $resultsBySubject[$subject][] = $result;
                 }
                 
-                foreach ($resultsBySubject as $subject => $subjectResults) {
-                    $subjectTotal = array_sum(array_column($subjectResults, 'marks'));
-                    $subjectCount = count($subjectResults);
-                    $subjectAverage = $subjectCount > 0 ? round($subjectTotal / $subjectCount, 2) : 0;
+                if (!empty($termResults)) {
+                    // Calculate averages
+                    $totalMarks = array_sum(array_column($termResults, 'marks'));
+                    $totalResults = count($termResults);
+                    $average = $totalResults > 0 ? round($totalMarks / $totalResults, 2) : 0;
                     
-                    $subjectPerformance[$subject] = [
-                        'average' => $subjectAverage,
-                        'count' => $subjectCount
+                    // Group by subject
+                    $subjectPerformance = [];
+                    $resultsBySubject = [];
+                    foreach ($termResults as $result) {
+                        $subject = $result['subject_name'] ?? 'Unknown';
+                        if (!isset($resultsBySubject[$subject])) {
+                            $resultsBySubject[$subject] = [];
+                        }
+                        $resultsBySubject[$subject][] = $result;
+                    }
+                    
+                    foreach ($resultsBySubject as $subject => $subjectResults) {
+                        $subjectTotal = array_sum(array_column($subjectResults, 'marks'));
+                        $subjectCount = count($subjectResults);
+                        $subjectAverage = $subjectCount > 0 ? round($subjectTotal / $subjectCount, 2) : 0;
+                        
+                        $subjectPerformance[$subject] = [
+                            'average' => $subjectAverage,
+                            'count' => $subjectCount
+                        ];
+                    }
+                    
+                    $termPerformance[$year][$term] = [
+                        'average' => $average,
+                        'total_results' => $totalResults,
+                        'subject_performance' => $subjectPerformance,
+                        'exams_count' => count($termExams)
                     ];
                 }
-                
-                $termPerformance[$term] = [
-                    'average' => $average,
-                    'total_results' => $totalResults,
-                    'subject_performance' => $subjectPerformance,
-                    'exams_count' => count($termExams)
-                ];
             }
         }
         

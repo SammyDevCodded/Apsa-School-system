@@ -150,6 +150,17 @@
                                     Fees
                                 </a>
                             <?php endif; ?>
+
+                            <?php if (isset($_SESSION['staff_portal_logged_in'])): ?>
+                                <a href="<?= $portalPrefix ?>timetable" 
+                                   class="<?= strpos($currentUri, '/timetable') !== false ? 'nav-link-active' : '' ?> px-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition">
+                                    Timetable
+                                </a>
+                                <a href="<?= $portalPrefix ?>academics" 
+                                   class="<?= strpos($currentUri, '/academics') !== false ? 'nav-link-active' : '' ?> px-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition">
+                                    Academics
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -413,8 +424,107 @@
         </div>
     </div>
 
+    <!-- Staff Subjects Modal -->
+    <div id="staff-subjects-modal" class="hidden fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 p-0 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-6 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white leading-tight">My Subjects</h3>
+                <button onclick="document.getElementById('staff-subjects-modal').classList.add('hidden')" class="text-white/50 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="staff-subjects-list" class="space-y-3">
+                    <!-- Subjects injected here -->
+                    <div class="p-4 text-center text-white/50 text-sm">Loading...</div>
+                </div>
+            </div>
+            <div class="p-4 bg-black/20 border-t border-white/10 text-right">
+                <button onclick="document.getElementById('staff-subjects-modal').classList.add('hidden')" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Logic & Modal Logic -->
     <script>
+        // Staff Subjects Modal Logic
+        function openStaffSubjectsModal() {
+            const modal = document.getElementById('staff-subjects-modal');
+            const list = document.getElementById('staff-subjects-list');
+            
+            modal.classList.remove('hidden');
+            list.innerHTML = '<div class="p-4 text-center text-white/50 text-sm">Loading...</div>';
+            
+            fetch('/portal/staff/subjects-data')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.subjects && data.subjects.length > 0) {
+                        list.innerHTML = data.subjects.map(sub => `
+                            <div class="bg-white/5 p-4 rounded-lg flex justify-between items-center border border-white/5 hover:bg-white/10 transition">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-sm">
+                                        ${sub.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white">${escapeHtml(sub.name)}</p>
+                                        <p class="text-white/60 text-xs uppercase tracking-wide">${escapeHtml(sub.code)}</p>
+                                    </div>
+                                </div>
+                                ${sub.class_name ? `<span class="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-semibold">${escapeHtml(sub.class_name)}</span>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<div class="p-4 text-center text-white/50 text-sm">No subjects assigned.</div>';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    list.innerHTML = '<div class="p-4 text-center text-red-300 text-sm">Failed to load subjects.</div>';
+                });
+        }
+        
+        <?php
+        // Robust Role Detection Strategy
+        $portalRole = 'student'; // Default
+
+        // 0. Priority: Explicit View Variable (Passed from Controller)
+        // Check for both camelCase and snake_case versions
+        if (isset($portalRole)) {
+            // Already set, keep it (camelCase)
+        } elseif (isset($portal_role)) {
+            $portalRole = $portal_role; // From controller (snake_case)
+        } else {
+            // 1. URL Context / Session Fallback
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            
+            // Case-insensitive check for stronger matching
+            if (stripos($uri, '/portal/staff/') !== false) {
+                $portalRole = 'staff';
+            } elseif (stripos($uri, '/portal/parent/') !== false) {
+                $portalRole = 'parent';
+            } elseif (stripos($uri, '/portal/student/') !== false) {
+                $portalRole = 'student';
+            } else {
+                // 2. Fallback: Session Flag
+                $portalRole = $_SESSION['portal_role'] ?? 'student';
+                 if (!isset($_SESSION['portal_role'])) {
+                    if (isset($_SESSION['staff_portal_logged_in'])) {
+                        $portalRole = 'staff';
+                    } elseif (isset($_SESSION['parent_logged_in'])) {
+                        $portalRole = 'parent';
+                    } elseif (isset($_SESSION['student_logged_in'])) {
+                        $portalRole = 'student';
+                    }
+                }
+            }
+        }
+        ?>
+        const portalRole = "<?= $portalRole ?>";
+        console.log("Detected Portal Role:", portalRole); // Debug
         // Modal Logic
         const logoutBtn = document.getElementById('logout-btn');
         const logoutModal = document.getElementById('logout-confirm-modal');
@@ -712,31 +822,120 @@
             // Reset Tabs
             switchProfileTab('overview');
             
-            fetch('/portal/student/profile-data')
+            // Determine Endpoint
+            let url = '/portal/student/profile-data';
+            if (portalRole === 'staff') {
+                url = '/portal/staff/profile-data';
+            } else if (portalRole === 'parent') {
+                url = '/portal/parent/profile-data';
+            }
+            
+            fetch(url)
                 .then(res => {
                     if(!res.ok) throw new Error('Failed to load');
                     return res.json();
                 })
                 .then(data => {
-                    const s = data.student;
+                    const s = data.student || data.staff;
                     const fullName = s.first_name + ' ' + s.last_name;
                     
-                    // Header
-                    document.getElementById('prof-name').textContent = fullName;
-                    // Overview Tab
-                    document.getElementById('prof-full-name').textContent = fullName;
-                    document.getElementById('prof-dob').textContent = s.date_of_birth || 'N/A';
-                    document.getElementById('prof-gender').textContent = s.gender || 'N/A';
-                    
-                    // Academic Tab
-                    document.getElementById('prof-admission').textContent = s.admission_no;
-                    document.getElementById('prof-class').textContent = s.class_name || 'N/A';
-                    document.getElementById('prof-joined').textContent = s.admission_date || 'N/A';
-                    
-                    // Contact Tab
-                    document.getElementById('prof-guardian').textContent = s.guardian_name || 'N/A';
-                    document.getElementById('prof-contact').textContent = s.guardian_phone || 'N/A';
-                    document.getElementById('prof-address').textContent = s.address || 'N/A';
+                    // Specific Logic for Staff vs Student
+                    if (portalRole === 'staff') {
+                         // Header
+                        document.getElementById('prof-name').textContent = fullName;
+                        document.getElementById('prof-role').textContent = s.position || 'Staff'; // Update Role Label
+                        
+                        // Overview Tab
+                        document.getElementById('prof-full-name').textContent = fullName;
+                        document.getElementById('prof-dob').textContent = 'N/A'; // Staff DOB not exposed
+                        document.getElementById('prof-dob').parentElement.classList.add('hidden'); // Hide DOB for staff
+                        document.getElementById('prof-gender').textContent = 'N/A';
+                        document.getElementById('prof-gender').parentElement.classList.add('hidden'); // Hide Gender for staff
+
+                        // Academic Tab -> Employment Tab
+                        document.getElementById('prof-admission').textContent = s.employee_id;
+                        document.getElementById('prof-admission').previousElementSibling.textContent = 'Employee ID';
+                        
+                        document.getElementById('prof-class').textContent = s.department || 'N/A';
+                        document.getElementById('prof-class').previousElementSibling.textContent = 'Department';
+                        
+                        document.getElementById('prof-joined').textContent = s.hire_date || 'N/A';
+                        document.getElementById('prof-joined').previousElementSibling.textContent = 'Hire Date';
+                        
+                        // Contact Tab
+                        document.getElementById('prof-guardian').textContent = s.email || 'N/A'; // Use Email slot
+                        document.getElementById('prof-guardian').previousElementSibling.textContent = 'Email';
+                        
+                        document.getElementById('prof-contact').textContent = s.phone || 'N/A';
+                        document.getElementById('prof-contact').previousElementSibling.textContent = 'Phone';
+                        
+                        document.getElementById('prof-address').textContent = 'N/A'; // Staff address not usually exposed here or not in logic yet
+                        
+                    } else if (portalRole === 'parent') {
+                        // PARENT LOGIC
+                        document.getElementById('prof-role').textContent = 'Parent';
+                        
+                        // Header
+                        document.getElementById('prof-name').textContent = s.guardian_name || 'Parent';
+
+                        // Overview Tab
+                        document.getElementById('prof-full-name').textContent = s.guardian_name || 'N/A';
+                        document.getElementById('prof-dob').parentElement.classList.add('hidden'); // Hide DOB
+                        document.getElementById('prof-gender').parentElement.classList.add('hidden'); // Hide Gender
+
+                        // Academic Tab -> Ward Info
+                        document.getElementById('prof-admission').textContent = s.admission_no;
+                        document.getElementById('prof-admission').previousElementSibling.textContent = 'Ward Admission No';
+                        
+                        document.getElementById('prof-class').textContent = s.class_name || 'N/A';
+                        document.getElementById('prof-class').previousElementSibling.textContent = 'Ward Class';
+                        
+                        document.getElementById('prof-joined').textContent = s.admission_date || 'N/A';
+                        document.getElementById('prof-joined').previousElementSibling.textContent = 'Ward Joined Date';
+                        
+                        // Contact Tab
+                        document.getElementById('prof-guardian').textContent = s.guardian_phone || 'N/A';
+                        document.getElementById('prof-guardian').previousElementSibling.textContent = 'Phone Number';
+                        
+                        document.getElementById('prof-contact').parentElement.classList.add('hidden'); // Hide second contact field
+                        
+                        document.getElementById('prof-address').textContent = s.address || 'N/A';
+
+                    } else {
+                        // STUDENT LOGIC (Default)
+                        document.getElementById('prof-role').textContent = 'Student';
+                        
+                        // Reset Hidden Fields
+                        document.getElementById('prof-dob').parentElement.classList.remove('hidden');
+                        document.getElementById('prof-gender').parentElement.classList.remove('hidden');
+                        document.getElementById('prof-contact').parentElement.classList.remove('hidden');
+
+                        // Header
+                        document.getElementById('prof-name').textContent = fullName;
+                        // Overview Tab
+                        document.getElementById('prof-full-name').textContent = fullName;
+                        document.getElementById('prof-dob').textContent = s.date_of_birth || 'N/A';
+                        document.getElementById('prof-gender').textContent = s.gender || 'N/A';
+                        
+                        // Academic Tab
+                        document.getElementById('prof-admission').textContent = s.admission_no;
+                        document.getElementById('prof-admission').previousElementSibling.textContent = 'Admission Number';
+                        
+                        document.getElementById('prof-class').textContent = s.class_name || 'N/A';
+                        document.getElementById('prof-class').previousElementSibling.textContent = 'Current Class';
+                        
+                        document.getElementById('prof-joined').textContent = s.admission_date || 'N/A';
+                        document.getElementById('prof-joined').previousElementSibling.textContent = 'Enrollment Date';
+                        
+                        // Contact Tab
+                        document.getElementById('prof-guardian').textContent = s.guardian_name || 'N/A';
+                        document.getElementById('prof-guardian').previousElementSibling.textContent = 'Guardian Name';
+                        
+                        document.getElementById('prof-contact').textContent = s.guardian_phone || 'N/A';
+                        document.getElementById('prof-contact').previousElementSibling.textContent = 'Guardian Phone';
+                        
+                        document.getElementById('prof-address').textContent = s.address || 'N/A';
+                    }
                     
                     // Initials
                     const initials = (s.first_name[0] || '') + (s.last_name[0] || '');
@@ -758,27 +957,29 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    loading.textContent = "Error loading profile.";
+                    loading.classList.add('hidden');
+                    // Show error state in modal?
+                    alert('Failed to load profile data.');
+                    closeProfileModal();
                 });
         }
         
-        function switchProfileTab(tabName) {
+        function switchProfileTab(tab) {
             // Hide all contents
             ['overview', 'academic', 'contact'].forEach(t => {
-                document.getElementById('tab-content-' + t).classList.add('hidden');
-                
                 const btn = document.getElementById('btn-tab-' + t);
-                if (t === tabName) {
+                const content = document.getElementById('tab-content-' + t);
+                
+                if (t === tab) {
                     btn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
                     btn.classList.add('text-white', 'bg-white/10');
+                    content.classList.remove('hidden');
                 } else {
                     btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
                     btn.classList.remove('text-white', 'bg-white/10');
+                    content.classList.add('hidden');
                 }
             });
-            
-            // Show selected content
-            document.getElementById('tab-content-' + tabName).classList.remove('hidden');
         }
         
         function closeProfileModal() {

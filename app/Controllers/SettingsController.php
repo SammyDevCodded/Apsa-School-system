@@ -7,8 +7,12 @@ use App\Models\GradingScale;
 use App\Models\GradingRule;
 use App\Models\Student;
 use App\Models\ClassModel;
+use App\Models\AcademicYear;
 use Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 
 class SettingsController extends Controller
 {
@@ -77,13 +81,15 @@ class SettingsController extends Controller
         // Load grading scales
         $gradingScales = $this->gradingScaleModel->getAllWithRules();
 
-        // Check if user has super admin role
+        // Check if user has admin or super admin role for general settings
         $isSuperAdmin = $this->hasAnyRole(['admin', 'super_admin']);
+        $isTrueSuperAdmin = $this->hasAnyRole(['super_admin']);
 
         $this->view('settings/index', [
             'settings' => $settings,
             'gradingScales' => $gradingScales,
-            'isSuperAdmin' => $isSuperAdmin
+            'isSuperAdmin' => $isSuperAdmin,
+            'isTrueSuperAdmin' => $isTrueSuperAdmin
         ]);
     }
 
@@ -115,6 +121,9 @@ class SettingsController extends Controller
             case 'academic_settings':
                 $this->updateAcademicSettings();
                 break;
+            case 'datetime_settings':
+                $this->updateDateTimeSettings();
+                break;
             default:
                 // Default to school info form if no specific form is identified
                 $this->updateSchoolInfo();
@@ -122,6 +131,46 @@ class SettingsController extends Controller
         }
 
         $this->redirect('/settings');
+    }
+
+    private function updateDateTimeSettings()
+    {
+        // Validate input
+        $date = $_POST['date'] ?? '';
+        $time = $_POST['time'] ?? '';
+
+        if (empty($date) || empty($time)) {
+            $_SESSION['flash_error'] = 'Date and time are required.';
+            return;
+        }
+
+        try {
+            // Create DateTime object from input
+            $inputDateTime = new \DateTime($date . ' ' . $time);
+            $inputTimestamp = $inputDateTime->getTimestamp();
+            
+            // Get current server timestamp
+            $serverTimestamp = time();
+            
+            // Calculate offset (Input Time - Server Time)
+            $offset = $inputTimestamp - $serverTimestamp;
+            
+            // Update settings
+            $data = [
+                'time_offset_seconds' => $offset
+            ];
+            
+            $result = $this->settingModel->updateSettings($data);
+            
+            if ($result !== false) {
+                $_SESSION['flash_success'] = 'Date and time settings updated successfully.';
+            } else {
+                $_SESSION['flash_error'] = 'Failed to update date and time settings.';
+            }
+            
+        } catch (Exception $e) {
+            $_SESSION['flash_error'] = 'Invalid date or time format.';
+        }
     }
 
     private function updateSchoolInfo()
@@ -567,8 +616,28 @@ class SettingsController extends Controller
         
         // If preview is requested, show the data
         if (isset($_POST['preview'])) {
+            $studentModel = new Student();
+            $duplicateCount = 0;
+            
+            // Scan for duplicates before previewing to highlight them for the user
+            foreach ($studentsData as &$row) {
+                $isDup = $studentModel->isDuplicate(
+                    $row['admission_no'] ?? '',
+                    $row['first_name'] ?? '',
+                    $row['last_name'] ?? '',
+                    $row['dob'] ?? ''
+                );
+                
+                $row['_is_duplicate'] = $isDup;
+                if ($isDup) {
+                    $duplicateCount++;
+                }
+            }
+            unset($row); // break tracking reference
+            
             $this->view('settings/import_preview', [
                 'data' => $studentsData,
+                'duplicateCount' => $duplicateCount,
                 'type' => 'students',
                 'settings' => $this->settingModel->getSettings(),
                 'isSuperAdmin' => $this->hasAnyRole(['admin', 'super_admin'])
@@ -576,8 +645,31 @@ class SettingsController extends Controller
             return;
         }
         
+        // Get target class ID if provided (this overrides CSV setting)
+        $classId = $_POST['class_id'] ?? null;
+        
         // Import the data
         $studentModel = new Student();
+        
+        // Pre-fetch mappings for text-to-ID translation
+        $classModel = new ClassModel();
+        $academicYearModel = new AcademicYear();
+        
+        $allClasses = $classModel->getAll();
+        $classMap = [];
+        foreach ($allClasses as $c) {
+            $classMap[strtolower(trim($c['name']))] = $c['id'];
+        }
+        
+        $allAcademicYears = $academicYearModel->getAll();
+        $academicYearMap = [];
+        foreach ($allAcademicYears as $ay) {
+            $academicYearMap[strtolower(trim($ay['name']))] = $ay['id'];
+        }
+        
+        $currentAcademicYear = $academicYearModel->getCurrent();
+        $defaultAcademicYearId = $currentAcademicYear ? $currentAcademicYear['id'] : null;
+        
         $importedCount = 0;
         $errors = [];
         
@@ -589,11 +681,53 @@ class SettingsController extends Controller
                     continue;
                 }
                 
+                // Map class string to class_id
+                if (!empty($studentData['class'])) {
+                    $className = strtolower(trim($studentData['class']));
+                    if (isset($classMap[$className])) {
+                        $studentData['class_id'] = $classMap[$className];
+                    }
+                    unset($studentData['class']); // remove string from insert array
+                }
+                
+                // Override with Target Class dropdown if selected
+                if (!empty($classId)) {
+                    $studentData['class_id'] = $classId;
+                }
+                
+                // Map academic_year string to academic_year_id
+                if (!empty($studentData['academic_year'])) {
+                    $ayName = strtolower(trim($studentData['academic_year']));
+                    if (isset($academicYearMap[$ayName])) {
+                        $studentData['academic_year_id'] = $academicYearMap[$ayName];
+                    }
+                    unset($studentData['academic_year']);
+                }
+                
+                // Set default academic year if missing
+                if (empty($studentData['academic_year_id']) && $defaultAcademicYearId) {
+                    $studentData['academic_year_id'] = $defaultAcademicYearId;
+                }
+                
                 // Create student
                 $studentId = $studentModel->create($studentData);
                 
                 if ($studentId) {
                     $importedCount++;
+                    
+                    // Auto-assign fees if a class ID is now set
+                    $finalClassId = $studentData['class_id'] ?? null;
+                    if (!empty($finalClassId)) {
+                        $feeModel = new \App\Models\Fee();
+                        $classFees = $feeModel->getFeesByClassId($finalClassId);
+                        
+                        if (!empty($classFees)) {
+                            $feeAssignmentModel = new \App\Models\FeeAssignment();
+                            foreach ($classFees as $fee) {
+                                $feeAssignmentModel->assignStudents($fee['id'], [$studentId]);
+                            }
+                        }
+                    }
                 } else {
                     $errors[] = "Row " . ($index + 1) . ": Failed to import student.";
                 }
@@ -793,7 +927,7 @@ class SettingsController extends Controller
         }
     }
     
-    // Download sample student CSV
+    // Download sample student XLSX with dynamic validation
     public function downloadStudentSample()
     {
         // Check if user is logged in
@@ -806,21 +940,151 @@ class SettingsController extends Controller
             $this->redirect('/dashboard');
         }
         
-        // Set headers for CSV download
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="student_import_sample.csv"');
+        $hasClassId = !empty($_GET['class_id']);
         
-        // Output CSV
-        $output = fopen('php://output', 'w');
+        // Initialize Spreadsheet
+        $spreadsheet = new Spreadsheet();
         
-        // Add headers
-        fputcsv($output, ['admission_no', 'first_name', 'last_name', 'dob', 'gender', 'class_id', 'guardian_name', 'guardian_phone', 'address', 'student_category', 'admission_date', 'academic_year_id']);
+        // Setup ReferenceData sheet (Hidden)
+        $refSheet = $spreadsheet->createSheet();
+        $refSheet->setTitle('ReferenceData');
+        $refSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
         
-        // Add sample data
-        fputcsv($output, ['STU001', 'John', 'Doe', '2010-01-15', 'Male', '1', 'Jane Doe', '1234567890', '123 Main St', 'regular_day', '2023-09-01', '1']);
-        fputcsv($output, ['STU002', 'Jane', 'Smith', '2010-05-20', 'Female', '2', 'John Smith', '0987654321', '456 Oak Ave', 'regular_boarding', '2023-09-01', '1']);
+        // Fetch classes and academic years
+        $classModel = new ClassModel();
+        $allClasses = $classModel->getAll();
+        $academicYearModel = new AcademicYear();
+        $allAcademicYears = $academicYearModel->getAll();
         
-        fclose($output);
+        // Populate ReferenceData sheet
+        // Column A: Classes, Column B: Academic Years
+        $refRowClass = 1;
+        foreach ($allClasses as $c) {
+            $refSheet->setCellValue('A' . $refRowClass, $c['name']);
+            $refRowClass++;
+        }
+        
+        $refRowAy = 1;
+        foreach ($allAcademicYears as $ay) {
+            $refSheet->setCellValue('B' . $refRowAy, $ay['name']);
+            $refRowAy++;
+        }
+        
+        // Setup Main Sheet
+        $mainSheet = $spreadsheet->setActiveSheetIndex(0);
+        $mainSheet->setTitle('Students');
+        
+        // Build headers dynamically
+        $headers = ['admission_no', 'first_name', 'last_name', 'dob', 'gender'];
+        if (!$hasClassId) {
+            $headers[] = 'class';
+        }
+        $headers = array_merge($headers, ['guardian_name', 'guardian_phone', 'address', 'student_category', 'admission_date', 'academic_year']);
+        
+        // Apply headers
+        $colIndex = 1;
+        foreach ($headers as $header) {
+            $mainSheet->setCellValueByColumnAndRow($colIndex, 1, $header);
+            $colIndex++;
+        }
+        
+        // Setup Validation
+        // Identify column letters
+        $genderColLetter = '';
+        $classColLetter = '';
+        $academicYearColLetter = '';
+        
+        foreach ($headers as $i => $header) {
+            $letter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+            if ($header === 'gender') $genderColLetter = $letter;
+            if ($header === 'class') $classColLetter = $letter;
+            if ($header === 'academic_year') $academicYearColLetter = $letter;
+        }
+        
+        // 1. Gender Validation (Comma-separated)
+        $validationGender = $mainSheet->getCell($genderColLetter . '2')->getDataValidation();
+        $validationGender->setType(DataValidation::TYPE_LIST);
+        $validationGender->setErrorStyle(DataValidation::STYLE_INFORMATION);
+        $validationGender->setAllowBlank(false);
+        $validationGender->setShowInputMessage(true);
+        $validationGender->setShowErrorMessage(true);
+        $validationGender->setShowDropDown(true);
+        $validationGender->setFormula1('"Male,Female"');
+        
+        // Apply Gender validation to rows 2-1000
+        for ($row = 2; $row <= 1000; $row++) {
+            $mainSheet->getCell($genderColLetter . $row)->setDataValidation(clone $validationGender);
+        }
+        
+        // 2. Class Validation (from ReferenceData)
+        if (!$hasClassId && $refRowClass > 1) {
+            $validationClass = $mainSheet->getCell($classColLetter . '2')->getDataValidation();
+            $validationClass->setType(DataValidation::TYPE_LIST);
+            $validationClass->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validationClass->setAllowBlank(true);
+            $validationClass->setShowInputMessage(true);
+            $validationClass->setShowErrorMessage(true);
+            $validationClass->setShowDropDown(true);
+            $validationClass->setFormula1('ReferenceData!$A$1:$A$' . ($refRowClass - 1));
+            
+            for ($row = 2; $row <= 1000; $row++) {
+                $mainSheet->getCell($classColLetter . $row)->setDataValidation(clone $validationClass);
+            }
+        }
+        
+        // 3. Academic Year Validation (from ReferenceData)
+        if ($refRowAy > 1) {
+            $validationAy = $mainSheet->getCell($academicYearColLetter . '2')->getDataValidation();
+            $validationAy->setType(DataValidation::TYPE_LIST);
+            $validationAy->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validationAy->setAllowBlank(true);
+            $validationAy->setShowInputMessage(true);
+            $validationAy->setShowErrorMessage(true);
+            $validationAy->setShowDropDown(true);
+            $validationAy->setFormula1('ReferenceData!$B$1:$B$' . ($refRowAy - 1));
+            
+            for ($row = 2; $row <= 1000; $row++) {
+                $mainSheet->getCell($academicYearColLetter . $row)->setDataValidation(clone $validationAy);
+            }
+        }
+        
+        // Add sample data 1
+        $sample1 = ['STU001', 'John', 'Doe', '2010-01-15', 'Male'];
+        if (!$hasClassId) {
+            $sampleClass = ($refRowClass > 1 && !empty($allClasses)) ? $allClasses[0]['name'] : 'Grade 1';
+            $sample1[] = $sampleClass;
+        }
+        $sampleAy = ($refRowAy > 1 && !empty($allAcademicYears)) ? reset($allAcademicYears)['name'] : '2023-2024';
+        
+        $sample1 = array_merge($sample1, ['Jane Doe', '1234567890', '123 Main St', 'regular_day', '2023-09-01', $sampleAy]);
+        
+        $colIndex = 1;
+        foreach ($sample1 as $val) {
+            $mainSheet->setCellValueByColumnAndRow($colIndex, 2, $val);
+            $colIndex++;
+        }
+        
+        // Build sample data 2
+        $sample2 = ['STU002', 'Jane', 'Smith', '2010-05-20', 'Female'];
+        if (!$hasClassId) {
+            $sampleClass2 = ($refRowClass > 2 && count($allClasses) > 1) ? $allClasses[1]['name'] : (($refRowClass > 1 && !empty($allClasses)) ? $allClasses[0]['name'] : 'Grade 2');
+            $sample2[] = $sampleClass2;
+        }
+        $sample2 = array_merge($sample2, ['John Smith', '0987654321', '456 Oak Ave', 'regular_boarding', '2023-09-01', $sampleAy]);
+        
+        $colIndex = 1;
+        foreach ($sample2 as $val) {
+            $mainSheet->setCellValueByColumnAndRow($colIndex, 3, $val);
+            $colIndex++;
+        }
+        
+        // Set headers for XLSX download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="student_import_sample.xlsx"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
         exit();
     }
     
@@ -864,8 +1128,8 @@ class SettingsController extends Controller
             $this->redirect('/login');
         }
         
-        // Only allow super admin users to access this
-        if (!$this->hasAnyRole(['admin', 'super_admin'])) {
+        // Only allow strictly super admin users to access this
+        if (!$this->hasAnyRole(['super_admin'])) {
             $this->redirect('/dashboard');
         }
         
@@ -890,13 +1154,13 @@ class SettingsController extends Controller
         // Load grading scales
         $gradingScales = $this->gradingScaleModel->getAllWithRules();
         
-        // Check if user has super admin role
-        $isSuperAdmin = $this->hasAnyRole(['admin', 'super_admin']);
+        // Check if user has super admin role strictly
+        $isTrueSuperAdmin = $this->hasAnyRole(['super_admin']);
         
         $this->view('settings/wipe', [
             'settings' => $settings,
             'gradingScales' => $gradingScales,
-            'isSuperAdmin' => $isSuperAdmin
+            'isTrueSuperAdmin' => $isTrueSuperAdmin
         ]);
     }
     
@@ -908,8 +1172,8 @@ class SettingsController extends Controller
             $this->redirect('/login');
         }
         
-        // Only allow super admin users to access this
-        if (!$this->hasAnyRole(['admin', 'super_admin'])) {
+        // Only allow strictly super admin users to execute a system wipe
+        if (!$this->hasAnyRole(['super_admin'])) {
             $this->redirect('/dashboard');
         }
         
@@ -1056,6 +1320,29 @@ class SettingsController extends Controller
                 $auditLogModel = new \App\Models\AuditLog();
                 $sql = "DELETE FROM audit_logs";
                 return $auditLogModel->executeRaw($sql);
+                
+            case 'portal_sessions':
+                // Wipe portal sessions
+                $portalSessionModel = new \App\Models\PortalSession();
+                $sql = "DELETE FROM portal_sessions";
+                return $portalSessionModel->executeRaw($sql);
+
+            case 'portal_notifications':
+                // Wipe portal notifications
+                $portalNotificationModel = new \App\Models\PortalNotification();
+                $sql = "DELETE FROM portal_notifications";
+                return $portalNotificationModel->executeRaw($sql);
+
+            case 'receipts':
+                // Wipe receipts data
+                $receiptModel = new \App\Models\Receipt();
+                $sql = "DELETE FROM receipts";
+                return $receiptModel->executeRaw($sql);
+
+            case 'student_promotions':
+                // Wipe student promotions history
+                $sql = "DELETE FROM student_promotions";
+                return $this->settingModel->executeRaw($sql);
                 
             default:
                 return false;

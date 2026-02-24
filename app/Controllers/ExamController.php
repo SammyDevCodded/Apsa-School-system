@@ -60,8 +60,9 @@ class ExamController extends Controller
             $this->view('exams/show', [
                 'exam' => $exam,
                 'class' => $class,
-                'assignedClasses' => $assignedClasses
-            ], false); // false means don't include layout
+                'assignedClasses' => $assignedClasses,
+                'isAjax' => true
+            ]);
         } else {
             // For regular requests, render the full page
             $this->view('exams/show', [

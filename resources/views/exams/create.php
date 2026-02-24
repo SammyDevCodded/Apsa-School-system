@@ -26,11 +26,12 @@ ob_start();
                             <label for="academic_year_id" class="block text-sm font-medium text-gray-700">Academic Year</label>
                             <select name="academic_year_id" id="academic_year_id" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                <option value="">Select Academic Year</option>
                                 <?php if (isset($currentAcademicYear)): ?>
                                     <option value="<?= $currentAcademicYear['id'] ?>" selected>
                                         <?= htmlspecialchars($currentAcademicYear['name']) ?>
                                     </option>
+                                <?php else: ?>
+                                    <option value="">No Active Academic Year Found</option>
                                 <?php endif; ?>
                             </select>
                             <?php if (isset($currentAcademicYear)): ?>
@@ -44,16 +45,16 @@ ob_start();
                             <select name="term" id="term" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                 <option value="">Select Term</option>
-                                <?php if (isset($currentAcademicYear) && !empty($currentAcademicYear['term'])): ?>
-                                    <option value="<?= htmlspecialchars($currentAcademicYear['term']) ?>" selected>
-                                        <?= htmlspecialchars($currentAcademicYear['term']) ?>
+                                <?php 
+                                $terms = ['1st Term', '2nd Term', '3rd Term'];
+                                $currentTerm = isset($currentAcademicYear) && !empty($currentAcademicYear['term']) ? $currentAcademicYear['term'] : '';
+                                ?>
+                                <?php foreach ($terms as $term): ?>
+                                    <option value="<?= $term ?>" <?= ($term === $currentTerm) ? 'selected' : '' ?>>
+                                        <?= $term ?>
                                     </option>
-                                <?php else: ?>
-                                    <option value="1st Term" <?= (!isset($currentAcademicYear) || empty($currentAcademicYear['term'])) ? 'selected' : '' ?>>1st Term</option>
-                                    <option value="2nd Term">2nd Term</option>
-                                    <option value="3rd Term">3rd Term</option>
-                                <?php endif; ?>
-                                <option value="other">Other (specify)</option>
+                                <?php endforeach; ?>
+                                <option value="other" <?= (!in_array($currentTerm, $terms) && !empty($currentTerm)) ? 'selected' : '' ?>>Other (specify)</option>
                             </select>
                             <input type="text" id="custom_term" name="custom_term" placeholder="Enter custom term" 
                                 class="mt-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"

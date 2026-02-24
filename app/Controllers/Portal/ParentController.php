@@ -56,7 +56,8 @@ class ParentController extends Controller
         $this->view('portal/parent/dashboard', [
             'student' => $student,
             'fee_balance' => $balance,
-            'exam_count' => $resultCount
+            'exam_count' => $resultCount,
+            'portal_role' => 'parent' // Explicitly set role
         ]);
     }
 
@@ -107,5 +108,21 @@ class ParentController extends Controller
             'total_paid' => $totalPaid,
             'balance' => $balance
         ]);
+    }
+
+    public function getProfileData()
+    {
+        $studentId = $_SESSION['student_id'];
+        $student = $this->studentModel->find($studentId);
+        
+        if (!empty($student['class_id'])) {
+             $class = $this->classModel->find($student['class_id']);
+             $student['class_name'] = $class['name'] ?? 'N/A';
+        }
+
+        // Return JSON
+        header('Content-Type: application/json');
+        echo json_encode(['student' => $student]);
+        exit;
     }
 }

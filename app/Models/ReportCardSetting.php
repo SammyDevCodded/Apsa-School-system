@@ -23,7 +23,9 @@ class ReportCardSetting extends Model
         'show_class_score',
         'show_exam_score',
         'show_teacher_signature',
+        'teacher_signature',
         'show_headteacher_signature',
+        'headteacher_signature',
         'show_parent_signature',
         'show_position'
     ];

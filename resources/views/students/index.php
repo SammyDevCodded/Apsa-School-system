@@ -15,23 +15,21 @@ $studentCategoryLabels = [
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-semibold text-gray-900">Students</h1>
             <div class="flex space-x-2">
-                <div class="relative inline-block text-left">
-                    <button type="button" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none" id="export-menu-button">
-                        Export
-                    </button>
-                    <div class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden" id="export-menu">
-                        <div class="py-1">
-                            <a href="/students/export?<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
-                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                Export to CSV
-                            </a>
-                            <a href="/students/export?<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'print' => 1]))) ?>" 
-                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" target="_blank">
-                                Print/Export to PDF
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <a href="/students/export?<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'print' => 1]))) ?>" 
+                   target="_blank"
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                </a>
+                <a href="/students/export?<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                   class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 flex items-center">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export CSV
+                </a>
                 <!-- Changed from link to button to open modal -->
                 <button type="button" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700" id="openAddStudentModal">
                     Add Student
@@ -121,7 +119,20 @@ $studentCategoryLabels = [
                             </div>
                         </div>
                     </div>
+
+                    <div>
+                        <label for="per_page" class="block text-sm font-medium text-gray-700">Per Page</label>
+                        <select name="per_page" id="per_page" 
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="10" <?= ($pagination['per_page'] ?? 10) == 10 ? 'selected' : '' ?>>10</option>
+                            <option value="25" <?= ($pagination['per_page'] ?? 10) == 25 ? 'selected' : '' ?>>25</option>
+                            <option value="50" <?= ($pagination['per_page'] ?? 10) == 50 ? 'selected' : '' ?>>50</option>
+                            <option value="100" <?= ($pagination['per_page'] ?? 10) == 100 ? 'selected' : '' ?>>100</option>
+                        </select>
+                    </div>
                     
+
+
                     <div class="flex items-end">
                         <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             Search
@@ -224,14 +235,14 @@ $studentCategoryLabels = [
                 <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                     <div class="flex-1 flex justify-between sm:hidden">
                         <?php if ($pagination['current_page'] > 1): ?>
-                            <a href="?page=<?= $pagination['current_page'] - 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                            <a href="?page=<?= $pagination['current_page'] - 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'per_page' => $pagination['per_page']]))) ?>" 
                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Previous
                             </a>
                         <?php endif; ?>
                         
                         <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
-                            <a href="?page=<?= $pagination['current_page'] + 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                            <a href="?page=<?= $pagination['current_page'] + 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'per_page' => $pagination['per_page']]))) ?>" 
                                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Next
                             </a>
@@ -252,7 +263,7 @@ $studentCategoryLabels = [
                         <div>
                             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                                 <?php if ($pagination['current_page'] > 1): ?>
-                                    <a href="?page=<?= $pagination['current_page'] - 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                                    <a href="?page=<?= $pagination['current_page'] - 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'per_page' => $pagination['per_page']]))) ?>" 
                                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Previous</span>
                                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -274,14 +285,14 @@ $studentCategoryLabels = [
                                 }
                                 
                                 for ($i = $startPage; $i <= $endPage; $i++): ?>
-                                    <a href="?page=<?= $i ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                                    <a href="?page=<?= $i ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'per_page' => $pagination['per_page']]))) ?>" 
                                        class="relative inline-flex items-center px-4 py-2 border <?= $i == $pagination['current_page'] ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50' ?> text-sm font-medium">
                                         <?= $i ?>
                                     </a>
                                 <?php endfor; ?>
                                 
                                 <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
-                                    <a href="?page=<?= $pagination['current_page'] + 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm]))) ?>" 
+                                    <a href="?page=<?= $pagination['current_page'] + 1 ?>&<?= http_build_query(array_filter(array_merge($filters, ['search' => $searchTerm, 'per_page' => $pagination['per_page']]))) ?>" 
                                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Next</span>
                                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -438,15 +449,17 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Show success message
-                alert('Student added successfully!');
                 // Close modal
                 modal.classList.add('hidden');
-                // Reload the page to show the new student
+                // Reload the page to show the new student and trigger the global toast
                 location.reload();
             } else {
-                // Show error message
-                alert(data.error || 'Failed to add student. Please try again.');
+                // Show error message via global toast function if available, otherwise fallback to alert
+                if (typeof window.showToast === 'function') {
+                    window.showToast(data.error || 'Failed to add student. Please try again.', 'error');
+                } else {
+                    alert(data.error || 'Failed to add student. Please try again.');
+                }
                 // Reset button
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
@@ -454,7 +467,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            if (typeof window.showToast === 'function') {
+                window.showToast('An error occurred. Please try again.', 'error');
+            } else {
+                alert('An error occurred. Please try again.');
+            }
             // Reset button
             submitBtn.innerHTML = originalBtnText;
             submitBtn.disabled = false;

@@ -389,7 +389,7 @@
                             
                             <!-- Administration Dropdown -->
                             <div class="dropdown relative h-full flex items-center flex-shrink-0" data-dropdown="admin">
-                                <?php $isAdminActive = isActiveGroup(['/academic_years', '/school-database', '/audit_logs', '/backups', '/users', '/settings']); ?>
+                                <?php $isAdminActive = isActiveGroup(['/academic_years', '/archives', '/audit_logs', '/backups', '/users', '/settings']); ?>
                                 <button class="dropdown-trigger <?= $isAdminActive ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-gray-800 hover:border-gray-300 hover:text-indigo-700' ?> inline-flex items-center px-1 pt-1 border-b-2 text-sm font-bold h-full transition-colors duration-200 whitespace-nowrap">
                                     <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -402,7 +402,7 @@
                                 </button>
                                 <div class="dropdown-menu dropdown-content absolute top-full left-0 hidden glass-morphism rounded-md mt-1 py-1 w-48 z-50 shadow-lg">
                                     <a href="/academic_years" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Academic Years</a>
-                                    <a href="/school-database" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">School Database</a>
+                                    <a href="/archives" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">School Database</a>
                                     <?php if (hasAnyRole(['admin', 'super_admin'])): ?>
                                     <a href="/audit_logs" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Audit Logs</a>
                                     <a href="/backups" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Backups</a>
@@ -545,7 +545,7 @@
                     </button>
                     <div class="hidden pl-4 space-y-1" id="mobile-admin">
                          <a href="/academic_years" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Academic Years</a>
-                         <a href="/school-database" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">School Database</a>
+                         <a href="/archives" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">School Database</a>
                          <?php if (hasAnyRole(['admin', 'super_admin'])): ?>
                          <a href="/audit_logs" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Audit Logs</a>
                          <a href="/backups" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Backups</a>

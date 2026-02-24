@@ -242,7 +242,9 @@ class AcademicReportController extends Controller
         $gradingScale = $this->getGradingScaleForExam($examId);
         
         // Calculate Rank
-        $rankedResults = $examResultModel->getRankedResults(['exam_id' => $examId, 'class_id' => $classId]);
+        // Use perPage = 0 to get all results without pagination
+        $rankedResultsData = $examResultModel->getRankedResults(['exam_id' => $examId, 'class_id' => $classId], 1, 0);
+        $rankedResults = $rankedResultsData['data'] ?? [];
         $studentRanks = [];
         
         foreach ($rankedResults as $index => $row) {
@@ -330,7 +332,9 @@ class AcademicReportController extends Controller
         $gradingScale = $this->getGradingScaleForExam($examId);
         
         // Calculate Rank
-        $rankedResults = $examResultModel->getRankedResults(['exam_id' => $examId, 'class_id' => $classId]);
+        // Use perPage = 0 to get all results without pagination
+        $rankedResultsData = $examResultModel->getRankedResults(['exam_id' => $examId, 'class_id' => $classId], 1, 0);
+        $rankedResults = $rankedResultsData['data'] ?? [];
         $studentRanks = [];
         
         foreach ($rankedResults as $index => $row) {

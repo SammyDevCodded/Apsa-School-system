@@ -95,9 +95,21 @@ class Model
         return $result['count'];
     }
     
-    // Method to execute raw SQL queries
+    // Method to execute raw SQL queries that return execution status (INSERT, UPDATE, DELETE)
     public function executeRaw($sql, $params = [])
     {
         return $this->db->execute($sql, $params);
+    }
+
+    // Method to execute raw SQL SELECT queries returning multiple rows
+    public function queryRaw($sql, $params = [])
+    {
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    // Method to execute raw SQL SELECT queries returning a single row
+    public function queryRawOne($sql, $params = [])
+    {
+        return $this->db->fetchOne($sql, $params);
     }
 }

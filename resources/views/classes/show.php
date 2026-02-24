@@ -142,8 +142,8 @@ ob_start();
                 <div class="px-4 py-5 sm:px-6 cursor-pointer collapsible-header" data-target="term-performance">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">Performance by Term</h3>
-                            <p class="mt-1 max-w-2xl text-sm text-gray-500">Academic performance breakdown by term</p>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Performance by Academic Year & Term</h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">Academic performance breakdown</p>
                         </div>
                         <div class="flex items-center">
                             <svg class="h-5 w-5 text-gray-500 transform transition-transform duration-200 rotate-180 collapsible-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,50 +153,59 @@ ob_start();
                     </div>
                 </div>
                 <div class="border-t border-gray-200 px-4 py-5 sm:px-6 collapsible-content" id="term-performance">
-                    <div class="space-y-6">
-                        <?php foreach ($termPerformance as $term => $performance): ?>
-                        <div class="border border-gray-200 rounded-lg p-6">
-                            <div class="flex justify-between items-start mb-4">
-                                <h4 class="text-lg font-medium text-gray-900"><?= htmlspecialchars($term) ?></h4>
-                                <div class="flex space-x-4">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        <?= $performance['exams_count'] ?> exams
-                                    </span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <?= $performance['total_results'] ?> results
-                                    </span>
-                                </div>
+                    <div class="space-y-8">
+                        <?php foreach ($termPerformance as $year => $terms): ?>
+                        <div class="border border-gray-300 rounded-lg overflow-hidden">
+                            <div class="bg-gray-100 px-6 py-3 border-b border-gray-300">
+                                <h4 class="text-lg font-bold text-gray-800"><?= htmlspecialchars($year) ?></h4>
                             </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div class="bg-blue-50 p-3 rounded-lg text-center">
-                                    <div class="text-sm font-medium text-blue-800">Term Average</div>
-                                    <div class="mt-1 text-xl font-bold text-blue-900"><?= $performance['average'] ?></div>
-                                </div>
-                                <div class="bg-green-50 p-3 rounded-lg text-center">
-                                    <div class="text-sm font-medium text-green-800">Total Results</div>
-                                    <div class="mt-1 text-xl font-bold text-green-900"><?= $performance['total_results'] ?></div>
-                                </div>
-                                <div class="bg-purple-50 p-3 rounded-lg text-center">
-                                    <div class="text-sm font-medium text-purple-800">Subjects</div>
-                                    <div class="mt-1 text-xl font-bold text-purple-900"><?= count($performance['subject_performance']) ?></div>
-                                </div>
-                            </div>
-                            
-                            <?php if (!empty($performance['subject_performance'])): ?>
-                            <div>
-                                <h5 class="text-sm font-medium text-gray-700 mb-2">Subject Performance:</h5>
-                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                    <?php foreach ($performance['subject_performance'] as $subject => $subjectPerf): ?>
-                                    <div class="bg-gray-50 p-2 rounded text-center">
-                                        <div class="text-xs font-medium text-gray-600 truncate"><?= htmlspecialchars($subject) ?></div>
-                                        <div class="text-sm font-bold text-indigo-600 mt-1"><?= $subjectPerf['average'] ?></div>
-                                        <div class="text-xs text-gray-500"><?= $subjectPerf['count'] ?> results</div>
+                            <div class="p-6 space-y-6">
+                                <?php foreach ($terms as $term => $performance): ?>
+                                <div class="border border-gray-200 rounded-lg p-6 shadow-sm">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <h5 class="text-md font-bold text-indigo-700">Term <?= htmlspecialchars($term) ?></h5>
+                                        <div class="flex space-x-4">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <?= $performance['exams_count'] ?> exams
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <?= $performance['total_results'] ?> results
+                                            </span>
+                                        </div>
                                     </div>
-                                    <?php endforeach; ?>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div class="bg-blue-50 p-3 rounded-lg text-center">
+                                            <div class="text-sm font-medium text-blue-800">Term Average</div>
+                                            <div class="mt-1 text-xl font-bold text-blue-900"><?= $performance['average'] ?></div>
+                                        </div>
+                                        <div class="bg-green-50 p-3 rounded-lg text-center">
+                                            <div class="text-sm font-medium text-green-800">Total Results</div>
+                                            <div class="mt-1 text-xl font-bold text-green-900"><?= $performance['total_results'] ?></div>
+                                        </div>
+                                        <div class="bg-purple-50 p-3 rounded-lg text-center">
+                                            <div class="text-sm font-medium text-purple-800">Subjects</div>
+                                            <div class="mt-1 text-xl font-bold text-purple-900"><?= count($performance['subject_performance']) ?></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <?php if (!empty($performance['subject_performance'])): ?>
+                                    <div>
+                                        <h6 class="text-sm font-medium text-gray-700 mb-2">Subject Performance:</h6>
+                                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                            <?php foreach ($performance['subject_performance'] as $subject => $subjectPerf): ?>
+                                            <div class="bg-gray-50 p-2 rounded text-center">
+                                                <div class="text-xs font-medium text-gray-600 truncate" title="<?= htmlspecialchars($subject) ?>"><?= htmlspecialchars($subject) ?></div>
+                                                <div class="text-sm font-bold text-indigo-600 mt-1"><?= $subjectPerf['average'] ?></div>
+                                                <div class="text-xs text-gray-500"><?= $subjectPerf['count'] ?> results</div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
+                                <?php endforeach; ?>
                             </div>
-                            <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     </div>
@@ -228,36 +237,53 @@ ob_start();
                         No exams found for this class.
                     </div>
                     <?php else: ?>
-                    <ul class="divide-y divide-gray-200">
-                        <?php foreach ($exams as $exam): ?>
-                        <li class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center">
-                                        <p class="text-sm font-medium text-indigo-600 truncate">
-                                            <?= htmlspecialchars($exam['name']) ?>
-                                        </p>
-                                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Term <?= htmlspecialchars($exam['term']) ?>
-                                        </span>
+                    <?php 
+                        $groupedExams = [];
+                        foreach ($exams as $exam) {
+                            $year = $exam['academic_year_name'] ?? 'Unknown Academic Year';
+                            $term = $exam['term'] ?? 'Unknown Term';
+                            $groupedExams[$year][$term][] = $exam;
+                        }
+                    ?>
+                    <div class="bg-white">
+                        <?php foreach ($groupedExams as $year => $terms): ?>
+                        <div class="border-b border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+                            <h4 class="text-md font-bold text-gray-800"><?= htmlspecialchars($year) ?></h4>
+                        </div>
+                        <?php foreach ($terms as $term => $termExams): ?>
+                        <div class="bg-gray-100 px-4 py-2 sm:px-6 border-b border-gray-200">
+                            <h5 class="text-sm font-semibold text-gray-700">Term <?= htmlspecialchars($term) ?></h5>
+                        </div>
+                        <ul class="divide-y divide-gray-200">
+                            <?php foreach ($termExams as $exam): ?>
+                            <li class="px-4 py-4 sm:px-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-medium text-indigo-600 truncate">
+                                                <?= htmlspecialchars($exam['name']) ?>
+                                            </p>
+                                        </div>
+                                        <div class="mt-1 flex items-center text-sm text-gray-500">
+                                            <span><?= isset($exam['date']) ? date('M j, Y', strtotime($exam['date'])) : 'No date set' ?></span>
+                                            <?php if (!empty($exam['description'])): ?>
+                                            <span class="mx-2">•</span>
+                                            <span><?= htmlspecialchars($exam['description']) ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                    <div class="mt-1 flex items-center text-sm text-gray-500">
-                                        <span><?= isset($exam['date']) ? date('M j, Y', strtotime($exam['date'])) : 'No date set' ?></span>
-                                        <?php if (!empty($exam['description'])): ?>
-                                        <span class="mx-2">•</span>
-                                        <span><?= htmlspecialchars($exam['description']) ?></span>
-                                        <?php endif; ?>
+                                    <div class="ml-4 flex-shrink-0">
+                                        <button onclick="openExamResultsModal(<?= $exam['id'] ?>)" class="font-medium text-indigo-600 hover:text-indigo-500">
+                                            View Results
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="ml-4 flex-shrink-0">
-                                    <button onclick="openExamResultsModal(<?= $exam['id'] ?>)" class="font-medium text-indigo-600 hover:text-indigo-500">
-                                        View Results
-                                    </button>
-                                </div>
-                            </div>
-                        </li>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
                         <?php endforeach; ?>
-                    </ul>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -332,6 +358,76 @@ ob_start();
                     </div>
                 </div>
             </div>
+            
+            <!-- Termly Breakdown Section -->
+            <?php if (!empty($financialStats['termly_breakdown'])): ?>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+                <div class="px-4 py-5 sm:px-6 cursor-pointer collapsible-header" data-target="termly-breakdown">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Termly Financial Breakdown</h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">Summary of bills, payments, and balances per academic term</p>
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-gray-500 transform transition-transform duration-200 rotate-180 collapsible-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 collapsible-content" id="termly-breakdown">
+                    <div class="p-6 space-y-8">
+                        <?php foreach ($financialStats['termly_breakdown'] as $year => $terms): ?>
+                        <div class="border border-gray-300 rounded-lg overflow-hidden">
+                            <div class="bg-gray-100 px-6 py-3 border-b border-gray-300">
+                                <h4 class="text-lg font-bold text-gray-800"><?= htmlspecialchars($year) ?></h4>
+                            </div>
+                            <div class="p-4 space-y-6">
+                                <?php foreach ($terms as $term => $termStats): ?>
+                                <div class="border border-gray-200 rounded-lg p-5 shadow-sm">
+                                    <h5 class="text-md font-bold text-indigo-700 mb-4">Term <?= htmlspecialchars($term) ?></h5>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div class="bg-blue-50 p-4 rounded-lg flex items-center justify-between">
+                                            <span class="text-sm font-medium text-blue-800">Billed</span>
+                                            <span class="text-lg font-bold text-blue-900">₵<?= number_format($termStats['total_billed'], 2) ?></span>
+                                        </div>
+                                        <div class="bg-green-50 p-4 rounded-lg flex items-center justify-between">
+                                            <span class="text-sm font-medium text-green-800">Paid</span>
+                                            <span class="text-lg font-bold text-green-900">₵<?= number_format($termStats['total_paid'], 2) ?></span>
+                                        </div>
+                                        <div class="bg-yellow-50 p-4 rounded-lg flex items-center justify-between">
+                                            <span class="text-sm font-medium text-yellow-800">Balance</span>
+                                            <span class="text-lg font-bold text-yellow-900">₵<?= number_format($termStats['balance'], 2) ?></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <?php if (!empty($termStats['fees'])): ?>
+                                    <div class="mt-4">
+                                        <h6 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Fees Included:</h6>
+                                        <ul class="space-y-2">
+                                            <?php foreach ($termStats['fees'] as $fee): ?>
+                                            <li class="bg-gray-50 p-2 rounded flex justify-between text-sm">
+                                                <span class="font-medium text-gray-700"><?= htmlspecialchars($fee['name']) ?></span>
+                                                <div class="text-right space-x-3 text-xs md:text-sm">
+                                                    <span class="text-gray-500">Billed: ₵<?= number_format($fee['billed'], 2) ?></span>
+                                                    <span class="text-green-600 border-l border-gray-300 pl-2 ml-1">Paid: ₵<?= number_format($fee['paid'], 2) ?></span>
+                                                    <span class="text-red-500 border-l border-gray-300 pl-2 ml-1">Bal: ₵<?= number_format($fee['balance'], 2) ?></span>
+                                                </div>
+                                            </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             
             <!-- Fee Defaulters Section -->
             <?php if (!empty($financialStats['fee_defaulters'])): ?>

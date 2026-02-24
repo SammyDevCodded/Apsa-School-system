@@ -44,9 +44,10 @@ class Exam extends Model
 
     public function getByClassId($classId)
     {
-        $sql = "SELECT e.*, c.name as class_name 
+        $sql = "SELECT e.*, c.name as class_name, ay.name as academic_year_name 
                 FROM {$this->table} e 
                 LEFT JOIN classes c ON e.class_id = c.id
+                LEFT JOIN academic_years ay ON e.academic_year_id = ay.id
                 WHERE e.class_id = :class_id
                 ORDER BY e.date DESC";
         return $this->db->fetchAll($sql, ['class_id' => $classId]);
@@ -224,5 +225,29 @@ class Exam extends Model
         $sql = "SELECT DISTINCT term FROM {$this->table} WHERE term IS NOT NULL AND term != '' ORDER BY term";
         $results = $this->db->fetchAll($sql);
         return array_column($results, 'term');
+    }
+
+    public function getBySubjects($subjectIds, $limit = 5)
+    {
+        if (empty($subjectIds)) {
+            return [];
+        }
+        
+        // Create placeholders for IN clause
+        $placeholders = implode(',', array_fill(0, count($subjectIds), '?'));
+        
+        $sql = "SELECT DISTINCT e.*, c.name as class_name, ay.name as academic_year_name
+                FROM {$this->table} e 
+                LEFT JOIN classes c ON e.class_id = c.id
+                LEFT JOIN academic_years ay ON e.academic_year_id = ay.id
+                JOIN exam_results er ON e.id = er.exam_id
+                WHERE er.subject_id IN ($placeholders)
+                ORDER BY e.date DESC
+                LIMIT ?";
+                
+        // Merge subject IDs with limit for parameters
+        $params = array_merge($subjectIds, [$limit]);
+        
+        return $this->db->fetchAll($sql, $params);
     }
 }

@@ -77,15 +77,49 @@ class ReportsController extends Controller
             $this->redirect('/login');
         }
         
-        $studentModel = new Student();
-        $students = $studentModel->getAllWithClass();
-        
         $classModel = new ClassModel();
         $classes = $classModel->getAll();
         
+        // Get filters from request
+        $searchTerm = $this->get('search');
+        $classId = $this->get('class_id');
+        $perPage = (int)$this->get('per_page', 25);
+        $page = (int)$this->get('page', 1);
+        
+        // Validate perPage
+        if (!in_array($perPage, [10, 25, 50, 100, 1000])) {
+            $perPage = 25;
+        }
+        
+        $filters = [];
+        if ($classId) {
+            $filters['class_id'] = $classId;
+        }
+        
+        $studentModel = new Student();
+        // Use the paginated search method
+        // Note: The model method signature is searchWithClassPaginated($searchTerm = '', $filters = [], $page = 1, $perPage = 10)
+        $studentsData = $studentModel->searchWithClassPaginated($searchTerm, $filters, $page, $perPage);
+        
+        // Get settings for branding in print view
+        $settingModel = new Setting();
+        $settings = $settingModel->getSettings();
+        
         $this->view('reports/student_report', [
-            'students' => $students,
-            'classes' => $classes
+            'students' => $studentsData['data'], // Array of students
+            'pagination' => [
+                'total' => $studentsData['total'],
+                'per_page' => $studentsData['per_page'],
+                'current_page' => $studentsData['page'],
+                'total_pages' => $studentsData['total_pages']
+            ],
+            'classes' => $classes,
+            'filters' => [
+                'search' => $searchTerm,
+                'class_id' => $classId,
+                'per_page' => $perPage
+            ],
+            'settings' => $settings
         ]);
     }
     
@@ -184,14 +218,17 @@ class ReportsController extends Controller
         // Sort months chronologically
         ksort($monthlyPayments);
         
+        // Get settings for branding
+        $settingModel = new Setting();
+        $settings = $settingModel->getSettings();
+        
         $this->view('reports/financial_report', [
-            'yearlyPayments' => $yearlyPayments,
-            'monthlyPayments' => $monthlyPayments,
             'yearlyPayments' => $yearlyPayments,
             'monthlyPayments' => $monthlyPayments,
             'totalAmount' => $totalAmount,
             'selectedAcademicYearId' => $academicYearId,
-            'academicYears' => $academicYears
+            'academicYears' => $academicYears,
+            'settings' => $settings
         ]);
     }
     
@@ -210,6 +247,13 @@ class ReportsController extends Controller
         $school_name = $appSettings ? ($appSettings['school_name'] ?? 'School Name') : 'School Name';
         $school_logo = ($appSettings && !empty($appSettings['school_logo'])) ? '/uploads/' . $appSettings['school_logo'] : '/assets/images/logo.png';
         
+        // DEBUG: Log first exam to check data
+        if (!empty($filters['exams'])) {
+            file_put_contents(ROOT_PATH . '/debug_exams_log.txt', "Initial Load Exam: " . print_r($filters['exams'][0], true) . "\n", FILE_APPEND);
+        } else {
+            file_put_contents(ROOT_PATH . '/debug_exams_log.txt', "Initial Load: No exams found\n", FILE_APPEND);
+        }
+
         $this->view('reports/academic_report', [
             'filters' => $filters,
             'school_name' => $school_name,
@@ -253,15 +297,17 @@ class ReportsController extends Controller
         ];
 
         $type = $this->get('type', 'ranking'); // 'ranking' or 'trend'
+        $page = (int)$this->get('page', 1);
+        $perPage = (int)$this->get('per_page', 10);
 
         $examResultModel = new ExamResult();
 
         try {
             if ($type === 'trend') {
                 $dimension = $this->get('dimension', 'exam');
-                $data = $examResultModel->getTrendData($filters, $dimension);
+                $data = $examResultModel->getTrendData($filters, $dimension, $page, $perPage);
             } else {
-                $data = $examResultModel->getRankedResults($filters);
+                $data = $examResultModel->getRankedResults($filters, $page, $perPage);
             }
 
             $this->jsonResponse(['success' => true, 'data' => $data]);
@@ -327,7 +373,9 @@ class ReportsController extends Controller
     private function exportAnalyticsRanking($filters)
     {
         $examResultModel = new ExamResult();
-        $data = $examResultModel->getRankedResults($filters);
+        // Pass -1 for perPage to get all records
+        $result = $examResultModel->getRankedResults($filters, 1, -1);
+        $data = $result['data'];
 
         // Set headers for CSV download
         header('Content-Type: text/csv');
@@ -356,7 +404,9 @@ class ReportsController extends Controller
     private function printAnalyticsRanking($filters)
     {
         $examResultModel = new ExamResult();
-        $data = $examResultModel->getRankedResults($filters);
+        // Pass -1 for perPage to get all records
+        $result = $examResultModel->getRankedResults($filters, 1, -1);
+        $data = $result['data'];
         
         // Get school settings
         $settingModel = new \App\Models\Setting();
@@ -368,12 +418,12 @@ class ReportsController extends Controller
         // Interpret filters for display
         $filterStrings = [];
         if (!empty($filters['academic_year_id'])) {
-            $ay = (new AcademicYear())->getById($filters['academic_year_id']);
+            $ay = (new AcademicYear())->find($filters['academic_year_id']);
             if ($ay) $filterStrings[] = "Academic Year: " . $ay['name'];
         }
         if (!empty($filters['term'])) $filterStrings[] = "Term: " . $filters['term'];
         if (!empty($filters['class_id'])) {
-            $cls = (new ClassModel())->getById($filters['class_id']);
+            $cls = (new ClassModel())->find($filters['class_id']);
             if ($cls) $filterStrings[] = "Class: " . $cls['name'] . " " . $cls['level'];
         }
         if (!empty($filters['subject_id'])) {
@@ -382,7 +432,7 @@ class ReportsController extends Controller
              if ($sub) $filterStrings[] = "Subject: " . $sub['name'];
         }
         if (!empty($filters['exam_id'])) {
-             $ex = (new \App\Models\Exam())->getById($filters['exam_id']);
+             $ex = (new \App\Models\Exam())->find($filters['exam_id']);
              if ($ex) $filterStrings[] = "Exam: " . $ex['name'];
         }
 

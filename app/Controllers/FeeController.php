@@ -142,6 +142,7 @@ class FeeController extends Controller
             
             $this->jsonResponse([
                 'success' => true,
+                'fee' => $fee,
                 'students' => $students,
                 'classes' => $classes
             ]);

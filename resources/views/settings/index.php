@@ -204,9 +204,74 @@ $gradingTypes = [
                 </form>
             </div>
             </div>
+            <div class="border-t border-gray-200">
+                <form action="/settings" method="POST" class="px-4 py-5 sm:p-6" enctype="multipart/form-data">
+                    <!-- ... existing form fields ... -->
+                </form>
+            </div>
         </details>
 
-        <!-- Watermark Settings Form (Only visible to super admins) -->
+        <!-- Date & Time Settings Form (Only visible to super admins) -->
+        <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+        <details class="group mt-6 bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+            <summary class="px-4 py-5 sm:px-6 cursor-pointer list-none flex justify-between items-center focus:outline-none">
+                <div>
+                     <h3 class="text-lg leading-6 font-medium text-gray-900">Date & Time Settings</h3>
+                     <p class="mt-1 max-w-2xl text-sm text-gray-500">Manually set the system date and time.</p>
+                </div>
+                <div class="ml-4 flex-shrink-0">
+                   <svg class="h-6 w-6 text-gray-500 transform group-open:rotate-180 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                   </svg>
+                </div>
+            </summary>
+            <div class="border-t border-gray-200">
+                <form action="/settings" method="POST" class="px-4 py-5 sm:p-6">
+                    <input type="hidden" name="_method" value="PUT">
+                    
+                    <?php 
+                        // Calculate current adjusted time
+                        $offset = $settings['time_offset_seconds'] ?? 0;
+                        $currentTime = time() + $offset;
+                        $currentDate = date('Y-m-d', $currentTime);
+                        $currentTimeStr = date('H:i', $currentTime);
+                    ?>
+                    
+                    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <div class="mt-1">
+                                <input type="date" name="date" id="date" value="<?= $currentDate ?>" required
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="time" class="block text-sm font-medium text-gray-700">Time</label>
+                            <div class="mt-1">
+                                <input type="time" name="time" id="time" value="<?= $currentTimeStr ?>" required
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                        </div>
+                        
+                        <div class="sm:col-span-6">
+                            <p class="text-sm text-gray-500 italic">
+                                Note: This will override the system time for all users. The current server time is <?= date('Y-m-d H:i:s') ?>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end">
+                        <input type="hidden" name="form_type" value="datetime_settings">
+                        <button type="submit"
+                            class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Update Date & Time
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </details>
+        <?php endif; ?>
         <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
         <details class="group mt-6 bg-white shadow overflow-hidden sm:rounded-lg mb-6">
             <summary class="px-4 py-5 sm:px-6 cursor-pointer list-none flex justify-between items-center focus:outline-none">
@@ -613,8 +678,8 @@ $gradingTypes = [
         </div>
         <?php endif; ?>
         
-        <!-- System Wipe Section (Only visible to super admins) -->
-        <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
+        <!-- System Wipe Section (Only visible to strict super admins) -->
+        <?php if (isset($isTrueSuperAdmin) && $isTrueSuperAdmin): ?>
         <div class="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="px-4 py-5 sm:px-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">System Wipe</h3>

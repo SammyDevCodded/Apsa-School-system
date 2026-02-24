@@ -81,6 +81,46 @@ class ReportCardController extends Controller
                 'show_exam_score' => $this->post('show_exam_score', false) ? 1 : 0,
                 'show_position' => $this->post('show_position', false) ? 1 : 0
             ];
+
+            // Handle Headteacher Signature Upload
+            if (isset($_FILES['headteacher_signature']) && $_FILES['headteacher_signature']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = PUBLIC_PATH . '/uploads/signatures/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $fileInfo = pathinfo($_FILES['headteacher_signature']['name']);
+                $extension = strtolower($fileInfo['extension']);
+                
+                if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    $fileName = 'headteacher_sig_' . time() . '.' . $extension;
+                    $targetPath = $uploadDir . $fileName;
+                    
+                    if (move_uploaded_file($_FILES['headteacher_signature']['tmp_name'], $targetPath)) {
+                        $data['headteacher_signature'] = '/uploads/signatures/' . $fileName;
+                    }
+                }
+            }
+
+            // Handle Teacher Signature Upload
+            if (isset($_FILES['teacher_signature']) && $_FILES['teacher_signature']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = PUBLIC_PATH . '/uploads/signatures/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $fileInfo = pathinfo($_FILES['teacher_signature']['name']);
+                $extension = strtolower($fileInfo['extension']);
+                
+                if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    $fileName = 'teacher_sig_' . time() . '.' . $extension;
+                    $targetPath = $uploadDir . $fileName;
+                    
+                    if (move_uploaded_file($_FILES['teacher_signature']['tmp_name'], $targetPath)) {
+                        $data['teacher_signature'] = '/uploads/signatures/' . $fileName;
+                    }
+                }
+            }
             
             $reportCardSettingModel = new ReportCardSetting();
             $result = $reportCardSettingModel->updateSettings($data);

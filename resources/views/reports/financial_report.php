@@ -214,21 +214,45 @@ function formatCurrency(amount) {
 }
 
 function printModal() {
-    const printWindow = window.open('', '', 'height=600,width=800');
     const monthName = document.getElementById('modalMonthName').textContent;
     const tableHtml = document.getElementById('detailsTable').outerHTML;
     
-    printWindow.document.write('<html><head><title>Payment Details - ' + monthName + '</title>');
-    printWindow.document.write('<style>table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; }</style>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write('<h1>Payment Details - ' + monthName + '</h1>');
-    printWindow.document.write(tableHtml);
-    printWindow.document.write('</body></html>');
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
     
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    if (printWindow) {
+        printWindow.document.write('<html><head><title>Payment Details - ' + monthName + '</title>');
+        printWindow.document.write('<style>');
+        printWindow.document.write('body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; }');
+        printWindow.document.write('h1 { text-align: center; color: #111; margin-bottom: 20px; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 15px; }');
+        printWindow.document.write('.meta { margin-bottom: 20px; text-align: center; color: #666; font-size: 14px; }');
+        printWindow.document.write('table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }');
+        printWindow.document.write('th, td { border: 1px solid #ddd; padding: 12px 10px; text-align: left; }');
+        printWindow.document.write('th { background-color: #f8f9fa; font-weight: 600; color: #444; }');
+        printWindow.document.write('tr:nth-child(even) { background-color: #f9f9f9; }');
+        printWindow.document.write('.footer { text-align: center; margin-top: 40px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }');
+        printWindow.document.write('@media print { body { padding: 0; } .no-print { display: none; } }');
+        printWindow.document.write('</style>');
+        printWindow.document.write('</head><body>');
+        
+        printWindow.document.write('<h1>Payment Details - ' + monthName + '</h1>');
+        printWindow.document.write('<div class="meta"><?= htmlspecialchars($settings['school_name'] ?? 'School Management System') ?> - Financial Report</div>');
+        printWindow.document.write(tableHtml);
+        printWindow.document.write('<div class="footer">Generated on ' + new Date().toLocaleString() + '</div>');
+        
+        printWindow.document.write('</body></html>');
+        printWindow.document.close(); // Finish writing
+        
+        // Wait specifically for content to load before printing
+        printWindow.focus();
+        setTimeout(function() {
+            printWindow.print();
+            // Optional: Close after print dialog is closed (user action)
+            // printWindow.close(); 
+        }, 500);
+    } else {
+        alert('Please allow popups for this website to print reports.');
+    }
 }
 
 function exportModalCSV() {

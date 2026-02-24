@@ -434,8 +434,18 @@ ob_start();
                             </div>
                             <div>
                                 <label for="student-password" class="block text-xs font-medium text-gray-700">Set New Password (Optional)</label>
-                                <input type="password" name="student_password" id="student-password" placeholder="Leave blank to keep current" 
-                                       class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <input type="password" name="student_password" id="student-password" placeholder="Leave blank to keep current" 
+                                           class="focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pr-10">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <button type="button" onclick="togglePasswordVisibility('student-password')" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                          </div>
                     </div>
@@ -454,8 +464,18 @@ ob_start();
                             </div>
                             <div>
                                 <label for="parent-password" class="block text-xs font-medium text-gray-700">Set New Password (Optional)</label>
-                                <input type="password" name="parent_password" id="parent-password" placeholder="Leave blank to keep current" 
-                                       class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <input type="password" name="parent_password" id="parent-password" placeholder="Leave blank to keep current" 
+                                           class="focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pr-10">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <button type="button" onclick="togglePasswordVisibility('parent-password')" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                          </div>
                     </div>
@@ -502,8 +522,18 @@ ob_start();
                         </div>
                         <div>
                             <label for="grant-password" class="block text-sm font-medium text-gray-700">Password</label>
-                            <input type="password" name="password" id="grant-password" required
-                                   class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <input type="password" name="password" id="grant-password" required
+                                       class="focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pr-10">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" onclick="togglePasswordVisibility('grant-password')" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -552,8 +582,18 @@ ob_start();
                         </div>
                         <div>
                             <label for="manage-password" class="block text-sm font-medium text-gray-700">New Password (Optional)</label>
-                            <input type="password" name="password" id="manage-password" placeholder="Leave blank to keep current"
-                                   class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <input type="password" name="password" id="manage-password" placeholder="Leave blank to keep current"
+                                       class="focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pr-10">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" onclick="togglePasswordVisibility('manage-password')" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -572,6 +612,15 @@ ob_start();
 </div>
 
 <script>
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+    } else {
+        input.type = 'password';
+    }
+}
+
 function openMessageModal(userId, userType, userName) {
     document.getElementById('msg-user-name').textContent = userName;
     document.getElementById('msg-user-id').value = userId;

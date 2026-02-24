@@ -8,9 +8,6 @@ ob_start();
         <div class="flex flex-col md:flex-row justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Academic Analytics</h1>
             <div class="flex space-x-3 mt-4 md:mt-0">
-                <button onclick="window.print()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-200 border border-gray-300 shadow-sm transition-colors">
-                    Print Report
-                </button>
                 <a href="/reports" class="bg-indigo-600 text-white px-5 py-2 rounded-md font-medium hover:bg-indigo-700 shadow-sm transition-colors">
                     Back to Reports
                 </a>
@@ -66,11 +63,31 @@ ob_start();
                         <select id="filter-exam" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="loadAnalytics()">
                             <option value="">All Exams</option>
                             <?php foreach ($filters['exams'] as $exam): ?>
-                                <option value="<?= $exam['id'] ?>"><?= htmlspecialchars($exam['name']) ?></option>
+                                <?php 
+                                    $label = $exam['name'];
+                                    if (!empty($exam['date'])) {
+                                        $label .= ' (' . date('M j, Y', strtotime($exam['date'])) . ')';
+                                    }
+                                    if (!empty($exam['description'])) {
+                                        $desc = $exam['description'];
+                                        if (strlen($desc) > 50) $desc = substr($desc, 0, 50) . '...';
+                                        $label .= ' - ' . $desc;
+                                    }
+                                ?>
+                                <option value="<?= $exam['id'] ?>"><?= htmlspecialchars($label) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Per Page</label>
+                        <select id="filter-per-page" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" onchange="loadAnalytics(1)">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
             </div>
         </div>
 
@@ -153,6 +170,12 @@ ob_start();
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-lg shadow-md mt-4" id="pagination-container">
+        <!-- Populated by JS -->
+    </div>
 </div>
 
 <!-- Exam Details Modal -->
@@ -224,7 +247,7 @@ ob_start();
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden col-subjects">Subjects</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24 col-total">Total</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24 col-avg">Avg</th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Action</th>
+                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20 action-col">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="modal-details-body" class="bg-white divide-y divide-gray-200">
@@ -252,6 +275,8 @@ ob_start();
     // ... rest of script ...
 
 let currentTab = 'ranking';
+let currentPage = 1;
+let currentPerPage = 10;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initial load
@@ -261,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['filter-year', 'filter-term', 'filter-class', 'filter-subject', 'filter-exam'].forEach(id => {
         document.getElementById(id).addEventListener('change', (e) => {
             updateFilterOptions(e.target.id);
-            loadAnalytics();
+            loadAnalytics(1); // Reset to page 1 on filter change
         });
     });
 });
@@ -283,7 +308,10 @@ function switchTab(tab) {
     document.getElementById('view-ranking').classList.toggle('hidden', tab !== 'ranking');
     document.getElementById('view-exams').classList.toggle('hidden', tab !== 'exams');
     
-    loadAnalytics(); // Reload data for the active view
+    document.getElementById('view-ranking').classList.toggle('hidden', tab !== 'ranking');
+    document.getElementById('view-exams').classList.toggle('hidden', tab !== 'exams');
+    
+    loadAnalytics(1); // Reset to page 1 when switching tabs
 }
 
 function resetFilters() {
@@ -293,7 +321,13 @@ function resetFilters() {
     document.getElementById('filter-subject').value = '';
     document.getElementById('filter-exam').value = '';
     updateFilterOptions(); // Reset options
-    loadAnalytics();
+    document.getElementById('filter-year').value = '';
+    document.getElementById('filter-term').value = '';
+    document.getElementById('filter-class').value = '';
+    document.getElementById('filter-subject').value = '';
+    document.getElementById('filter-exam').value = '';
+    updateFilterOptions(); // Reset options
+    loadAnalytics(1);
 }
 
 /**
@@ -338,6 +372,20 @@ function updateFilterOptions(changedId = null) {
                 if (typeof opt === 'string' || typeof opt === 'number') {
                     option.value = opt;
                     option.textContent = opt;
+                } else if (labelKey === 'complex_exam') {
+                    option.value = opt[valueKey];
+                    // Format: Name (Date) - Description
+                    let label = opt.name;
+                    if (opt.date) {
+                         // Simple date formatting if needed, or just use raw if passing YYYY-MM-DD
+                         label += ` (${opt.date})`; 
+                    }
+                    if (opt.description) {
+                        let desc = opt.description;
+                        if (desc.length > 50) desc = desc.substring(0, 50) + '...';
+                        label += ` - ${desc}`;
+                    }
+                    option.textContent = label;
                 } else {
                     option.value = opt[valueKey];
                     option.textContent = labelKey === 'complex_name' ? (opt.name + ' ' + (opt.level || '')) : opt[labelKey];
@@ -357,7 +405,7 @@ function updateFilterOptions(changedId = null) {
         // Update specific dropdowns
         if (data.classes) updateSelect('filter-class', data.classes, 'complex_name');
         if (data.subjects) updateSelect('filter-subject', data.subjects);
-        if (data.exams) updateSelect('filter-exam', data.exams);
+        if (data.exams) updateSelect('filter-exam', data.exams, 'complex_exam');
         // We can also update terms and years if needed, but usually those are top-level
         if (data.terms) updateSelect('filter-term', data.terms);
         // if (data.academic_years) updateSelect('filter-year', data.academic_years); 
@@ -385,7 +433,10 @@ function exportRanking(type) {
     window.location.href = `/reports/export/analytics_ranking?${params}`;
 }
 
-function loadAnalytics() {
+function loadAnalytics(page = 1) {
+    currentPage = page;
+    currentPerPage = document.getElementById('filter-per-page').value;
+
     const filters = {
         academic_year_id: document.getElementById('filter-year').value,
         term: document.getElementById('filter-term').value,
@@ -393,7 +444,9 @@ function loadAnalytics() {
         subject_id: document.getElementById('filter-subject').value,
         exam_id: document.getElementById('filter-exam').value,
         type: currentTab === 'exams' ? 'trend' : currentTab, 
-        dimension: 'exam' 
+        dimension: 'exam',
+        page: currentPage,
+        per_page: currentPerPage
     };
     
     const tbody = currentTab === 'ranking' ? document.getElementById('ranking-table-body') : document.getElementById('exams-table-body');
@@ -414,10 +467,11 @@ function loadAnalytics() {
         }
 
         if (currentTab === 'ranking') {
-            renderRankingTable(result.data);
+            renderRankingTable(result.data.data);
         } else {
-            renderExamsView(result.data);
+            renderExamsView(result.data.data);
         }
+        renderPagination(result.data);
     })
     .catch(error => {
         console.error('Error:', error);
@@ -434,8 +488,11 @@ function renderRankingTable(data) {
     }
 
     let html = '';
+    // Calculate offset based on current page to show correct rank
+    const offset = (currentPage - 1) * currentPerPage;
+    
     data.forEach((row, index) => {
-        const rank = index + 1;
+        const rank = offset + index + 1;
         let rankBadge = `<span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-xs font-medium text-gray-800">${rank}</span>`;
         
         if (rank === 1) rankBadge = `<span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-yellow-100 text-xs font-bold text-yellow-800">🥇</span>`;
@@ -537,7 +594,8 @@ function openExamDetails(examIds, examName, meta = {}) {
         academic_year_id: document.getElementById('filter-year').value,
         term: document.getElementById('filter-term').value, 
         class_id: document.getElementById('filter-class').value,
-        subject_id: document.getElementById('filter-subject').value
+        subject_id: document.getElementById('filter-subject').value,
+        per_page: -1 // Get all records for the modal
     };
     
     const params = new URLSearchParams(filters).toString();
@@ -551,8 +609,10 @@ function openExamDetails(examIds, examName, meta = {}) {
             return;
         }
         
-        currentExamData = result.data;
-        const data = result.data;
+        // Result structure is { success: true, data: { data: [...], total: ... } }
+        const responseData = result.data;
+        currentExamData = responseData.data || []; // Handle case where it might be empty or direct array (fallback)
+        const data = currentExamData;
 
         let html = '';
         data.forEach((row, index) => {
@@ -578,7 +638,7 @@ function openExamDetails(examIds, examName, meta = {}) {
                         ${parseFloat(row.average_score).toFixed(1)}
                         <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${grade}</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium action-col">
                         <button onclick="printStudentReport(${row.student_id})" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-colors text-xs">
                             Print
                         </button>
@@ -637,6 +697,7 @@ function printExamDetails() {
 
     printWindow.document.write('<html><head><title>Exam Results</title>');
     printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">'); 
+    printWindow.document.write('<style>body { -webkit-print-color-adjust: exact; } .action-col { display: none !important; }</style>');
     printWindow.document.write('</head><body class="p-8">');
     
     // Header with Logo
@@ -721,6 +782,91 @@ function exportExamDetailsCSV() {
 
 function closeExamModal() {
     document.getElementById('exam-details-modal').classList.add('hidden');
+}
+
+function renderPagination(meta) {
+    const container = document.getElementById('pagination-container');
+    
+    const { total, current_page, per_page, total_pages } = { 
+        total: meta.total, 
+        current_page: parseInt(meta.page), 
+        per_page: parseInt(meta.per_page), 
+        total_pages: meta.total_pages 
+    };
+
+    if (total === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+
+    const start = (current_page - 1) * per_page + 1;
+    const end = Math.min(current_page * per_page, total);
+
+    container.innerHTML = `
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Showing <span class="font-medium">${start}</span> to <span class="font-medium">${end}</span> of <span class="font-medium">${total}</span> results
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button onclick="loadAnalytics(${current_page - 1})" ${current_page === 1 ? 'disabled' : ''} class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${(current_page === 1) ? 'opacity-50 cursor-not-allowed' : ''}">
+                        <span class="sr-only">Previous</span>
+                        <!-- Heroicon name: solid/chevron-left -->
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    ${generatePageNumbers(current_page, total_pages)}
+                    <button onclick="loadAnalytics(${current_page + 1})" ${current_page === total_pages ? 'disabled' : ''} class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${(current_page === total_pages) ? 'opacity-50 cursor-not-allowed' : ''}">
+                        <span class="sr-only">Next</span>
+                        <!-- Heroicon name: solid/chevron-right -->
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </nav>
+            </div>
+        </div>
+        <!-- Mobile View -->
+        <div class="flex items-center justify-between sm:hidden w-full">
+            <button onclick="loadAnalytics(${current_page - 1})" ${current_page === 1 ? 'disabled' : ''} class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${(current_page === 1) ? 'opacity-50 cursor-not-allowed' : ''}">
+                Previous
+            </button>
+            <div class="text-sm text-gray-700">
+                Page ${current_page} of ${total_pages}
+            </div>
+            <button onclick="loadAnalytics(${current_page + 1})" ${current_page === total_pages ? 'disabled' : ''} class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${(current_page === total_pages) ? 'opacity-50 cursor-not-allowed' : ''}">
+                Next
+            </button>
+        </div>
+    `;
+}
+
+function generatePageNumbers(currentPage, totalPages) {
+    let html = '';
+    const maxVisible = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <button onclick="loadAnalytics(${i})" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${i === currentPage ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:bg-gray-50'}">
+                ${i}
+            </button>
+        `;
+    }
+    
+    return html;
 }
 </script>
 

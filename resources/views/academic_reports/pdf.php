@@ -306,7 +306,20 @@
                     <?php if (isset($settings['show_teacher_signature']) && $settings['show_teacher_signature']): ?>
                         <div class="signature-box">
                             <p>Class Teacher</p>
-                            <div class="signature-line"></div>
+                            <?php if (!empty($settings['teacher_signature'])): ?>
+                                <?php
+                                $tSigPath = $_SERVER['DOCUMENT_ROOT'] . $settings['teacher_signature'];
+                                if (file_exists($tSigPath)): ?>
+                                    <div style="text-align: center; margin-bottom: 5px;">
+                                        <img src="<?= htmlspecialchars($tSigPath) ?>" style="height: 40px; width: auto;" alt="Signature">
+                                    </div>
+                                    <div class="signature-line" style="margin-top: 5px;"></div>
+                                <?php else: ?>
+                                    <div class="signature-line"></div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <div class="signature-line"></div>
+                            <?php endif; ?>
                             <p>Signature</p>
                         </div>
                     <?php endif; ?>
@@ -314,7 +327,20 @@
                     <?php if (isset($settings['show_headteacher_signature']) && $settings['show_headteacher_signature']): ?>
                         <div class="signature-box">
                             <p>Head Teacher</p>
-                            <div class="signature-line"></div>
+                            <?php if (!empty($settings['headteacher_signature'])): ?>
+                                <?php
+                                $htSigPath = $_SERVER['DOCUMENT_ROOT'] . $settings['headteacher_signature'];
+                                if (file_exists($htSigPath)): ?>
+                                    <div style="text-align: center; margin-bottom: 5px;">
+                                        <img src="<?= htmlspecialchars($htSigPath) ?>" style="height: 40px; width: auto;" alt="Signature">
+                                    </div>
+                                    <div class="signature-line" style="margin-top: 5px;"></div>
+                                <?php else: ?>
+                                    <div class="signature-line"></div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <div class="signature-line"></div>
+                            <?php endif; ?>
                             <p>Signature</p>
                         </div>
                     <?php endif; ?>

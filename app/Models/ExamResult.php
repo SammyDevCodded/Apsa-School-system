@@ -296,8 +296,9 @@ class ExamResult extends Model
      * Get ranked results based on dynamic filters.
      * Supports filtering by academic_year, term, class, subject, exam.
      */
-    public function getRankedResults($filters = [])
+    public function getRankedResults($filters = [], $page = 1, $perPage = 10)
     {
+        $offset = ($page - 1) * $perPage;
         $params = [];
         $whereClause = ['1=1'];
 
@@ -323,7 +324,6 @@ class ExamResult extends Model
         }
 
         if (!empty($filters['class_id'])) {
-            // Can filter by Exam Class or Student Class. Usually Exam Class is more relevant for historical results.
             $whereClause[] = "e.class_id = :class_id";
             $params['class_id'] = $filters['class_id'];
         }
@@ -334,7 +334,6 @@ class ExamResult extends Model
         }
 
         if (!empty($filters['exam_id'])) {
-            // Handle multiple IDs (comma-separated string or array)
             if (is_array($filters['exam_id'])) {
                 $ids = array_map('intval', $filters['exam_id']);
                 $idsStr = implode(',', $ids);
@@ -351,12 +350,7 @@ class ExamResult extends Model
 
         $whereSql = implode(' AND ', $whereClause);
 
-        // Core Aggregation Logic
-        // If sorting by 'Student Performance', we group by student.
-        // If sorting by 'Subject Performance', we might group by subject (though that's usually a comparison view).
-        
-        // Default: Rank Students
-        // Added s.first_name, s.last_name, s.admission_no, sc.name to GROUP BY for SQL compatibility
+        // Data Query
         $sql = "SELECT 
                     s.id as student_id,
                     s.first_name, 
@@ -372,16 +366,40 @@ class ExamResult extends Model
                 WHERE {$whereSql}
                 GROUP BY s.id, s.first_name, s.last_name, s.admission_no, sc.name
                 ORDER BY total_score DESC";
+        
+        if ($perPage > 0) {
+            $sql .= " LIMIT $perPage OFFSET $offset";
+        }
 
-        return $this->db->fetchAll($sql, $params);
+        $data = $this->db->fetchAll($sql, $params);
+
+        // Count Query
+        // For accurate count with GROUP BY, we need to wrap in a subquery or Count Distinct
+        // COUNT(DISTINCT s.id) should work since we group by student
+        $countSql = "SELECT COUNT(DISTINCT s.id) as total
+                     FROM {$this->table} er
+                     {$joins}
+                     WHERE {$whereSql}";
+        
+        $total = $this->db->fetchOne($countSql, $params)['total'] ?? 0;
+        $totalPages = ($perPage > 0) ? ceil($total / $perPage) : 1;
+
+        return [
+            'data' => $data,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages
+        ];
     }
 
     /**
      * Get aggregated data for trend analysis / comparisons.
      * groups by the specified dimension (e.g., 'term', 'exam', 'academic_year')
      */
-    public function getTrendData($filters = [], $dimension = 'exam')
+    public function getTrendData($filters = [], $dimension = 'exam', $page = 1, $perPage = 10)
     {
+        $offset = ($page - 1) * $perPage;
         $params = [];
         $whereClause = ['1=1'];
 
@@ -414,23 +432,29 @@ class ExamResult extends Model
         // Define Grouping
         $groupBy = '';
         $selectLabel = '';
+        $countDimension = '';
         
         switch ($dimension) {
             case 'term':
                 $groupBy = "e.term, e.academic_year_id, ay.name";
                 $selectLabel = "CONCAT(COALESCE(ay.name, 'Unknown'), ' - ', COALESCE(e.term, 'Unknown')) as label";
+                // For count, we need to count unique terms (year + term)
+                // This is surprisingly complex in SQL standard without a subquery, but CONCAT is okay
+                $countDimension = "CONCAT(e.academic_year_id, '-', e.term)"; 
                 break;
             case 'academic_year':
                 $groupBy = "e.academic_year_id, ay.name";
                 $selectLabel = "COALESCE(ay.name, 'Unknown') as label";
+                $countDimension = "e.academic_year_id";
                 break;
             case 'exam':
             default:
                 // Group by Name, Term, Year to aggregate multiple classes for the same exam
-                // Using LOWER(TRIM()) to handle case-insensitive grouping and whitespace
-                // We aggregate sc.name (Student Class) to reflect actual participants, falling back to c.name (Exam Class)
                 $groupBy = "LOWER(TRIM(e.name)), LOWER(TRIM(e.term)), ay.name"; 
                 $selectLabel = "COALESCE(TRIM(e.name), 'Unknown Exam') as label, GROUP_CONCAT(DISTINCT e.id) as exam_ids, COALESCE(ay.name, 'Unknown Year') as academic_year, COALESCE(e.term, 'Unknown Term') as term, GROUP_CONCAT(DISTINCT COALESCE(sc.name, c.name) ORDER BY COALESCE(sc.name, c.name) SEPARATOR ', ') as class_names";
+                // For count, we need a unique identifier for this grouping. 
+                // Since we group by name+term+year, it's tricky to count distinct efficiently without a subquery.
+                // Let's use a subquery for the count.
                 break;
         }
 
@@ -446,7 +470,31 @@ class ExamResult extends Model
                 GROUP BY {$groupBy}
                 ORDER BY MIN(e.date) ASC"; // Chronological order usually makes sense for trends
 
-        return $this->db->fetchAll($sql, $params);
+        if ($perPage > 0) {
+            $sql .= " LIMIT $perPage OFFSET $offset";
+        }
+
+        $data = $this->db->fetchAll($sql, $params);
+
+        // Count Query
+        $countSql = "SELECT COUNT(*) as total FROM (
+                        SELECT 1
+                        FROM {$this->table} er
+                        {$joins}
+                        WHERE {$whereSql}
+                        GROUP BY {$groupBy}
+                    ) as count_table";
+
+        $total = $this->db->fetchOne($countSql, $params)['total'] ?? 0;
+        $totalPages = ($perPage > 0) ? ceil($total / $perPage) : 1;
+
+        return [
+            'data' => $data,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages
+        ];
     }
     
     /**
@@ -525,7 +573,7 @@ class ExamResult extends Model
 
         // 3. Get Exams (filtered by others)
         list($conds, $params) = $buildWhere('exam_id');
-        $sql = "SELECT DISTINCT e.id, e.name 
+        $sql = "SELECT DISTINCT e.id, e.name, e.date, e.description
                 FROM {$this->table} er {$baseJoins} 
                 WHERE " . implode(' AND ', $conds) . " ORDER BY e.date DESC";
         $results['exams'] = $this->db->fetchAll($sql, $params);
@@ -551,16 +599,16 @@ class ExamResult extends Model
     // Method to get detailed results for a student for specific exam IDs (e.g. for report card)
     public function getStudentExamResults($studentId, $examIds)
     {
+        // ... existing code ... (keeping the previous method intact if needed or just appending)
+        // Wait, replace_file_content replaces the chunk. I need to be careful.
+        // The previous tool call showed lines 1-628, and the file ends at line 628 with '}'.
+        // So I will insert before the closing brace or replace the end of the file correctly.
+        
         // Handle array or comma-separated string
         if (is_string($examIds)) {
             $examIds = explode(',', $examIds);
         }
         
-        // Sanitize and quote IDs for IN clause (safest manual way if PDO binding array is tricky in core)
-        // Assuming $this->db->fetchAll handles array binding if placeholder is distinct, but usually IN (?) needs dynamic placeholders.
-        // Let's use named placeholders if possible or just loop.
-        // Or simpler: use finding mechanism?
-        // Let's try standard PDO strategy with `in` helper if available, or just implode safely.
         $ids = implode(',', array_map('intval', $examIds));
         
         $sql = "SELECT er.*, sub.name as subject_name,
@@ -573,8 +621,36 @@ class ExamResult extends Model
                 LEFT JOIN classes c ON e.class_id = c.id
                 WHERE er.student_id = :student_id
                 AND er.exam_id IN ($ids)
-                ORDER BY sub.name"; // Order by subject
+                ORDER BY sub.name"; 
                 
         return $this->db->fetchAll($sql, ['student_id' => $studentId]);
+    }
+
+    // New method for Staff Portal: Get detailed results for specific subjects
+    public function getDetailedResultsBySubjects($subjectIds)
+    {
+        if (empty($subjectIds)) {
+            return [];
+        }
+
+        // Create placeholders
+        $placeholders = implode(',', array_fill(0, count($subjectIds), '?'));
+
+        $sql = "SELECT er.*, 
+                       s.first_name, s.last_name, s.admission_no,
+                       e.name as exam_name, e.term, e.date as exam_date,
+                       ay.name as academic_year_name,
+                       sub.name as subject_name, sub.code as subject_code,
+                       c.name as class_name
+                FROM {$this->table} er
+                JOIN exams e ON er.exam_id = e.id
+                JOIN students s ON er.student_id = s.id
+                JOIN subjects sub ON er.subject_id = sub.id
+                LEFT JOIN academic_years ay ON e.academic_year_id = ay.id
+                LEFT JOIN classes c ON e.class_id = c.id
+                WHERE er.subject_id IN ($placeholders)
+                ORDER BY ay.start_date DESC, e.term DESC, sub.name, s.last_name";
+
+        return $this->db->fetchAll($sql, $subjectIds);
     }
 }

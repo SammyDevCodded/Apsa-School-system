@@ -66,7 +66,51 @@ A comprehensive, web-based School Management System designed to streamline admin
 
 ## Changelog
 
-### [Current] - 2026-02-03
+### [Current] - 2026-02-23
+- **Class Information**:
+    - **Academic Performance**: Redesigned the "Academic Performance" tab to deeply group historical exam configurations by Academic Year and Term.
+    - **Financial Data**: Refactored class financial statistics to accurately track bills, payments, and balances per fee across academic terms, including historical `original_classes` for promoted students.
+    - **Termly Breakdown**: Added a new "Termly Financial Breakdown" section that visualizes grouped fee summaries by Academic Year and Term.
+- **Student Profile**:
+    - **Financial Details**: Added a "Details" button to the "Financial History" tab, triggering a modal with complete fee data, payment histories, and "Print/Export" options.
+- **Fee Management**:
+    - **Auto-Assignment**: Implemented automatic fee assignment logic when new students are created or switched between classes.
+    - **Assignment Ratios**: Enhanced the fee structure UI to accurately display fractional "(Assigned/Total)" ratios alongside class names.
+    - **Print Functionality**: Integrated a native print output view into the Fee Structure Details modal.
+    - **Bug Fix**: Resolved an asynchronous loading error within the Fee Structure View modal.
+- **System Administration**:
+    - **System Wipe Security**: Escalated the "System Wipe" operation to be exclusively accessible by Super Admin accounts.
+    - **Comprehensive Wipe Expansion**: Expanded the database clearing payload to include portal sessions, portal notifications, transaction receipts, and legacy archives via the wipe UX.
+- **General Enhancements**:
+    - **Notifications Standardized**: Replaced obtrusive JS alerts and static HTML banners with a globally consistent toast notification system across class addition, student registration, and bulk promotion workflows.
+
+### [2026-02-16]
+- **Attendance Management**:
+    - **Enhanced History**: Renamed "Recent History" to "History" with robust filtering options.
+    - **Filters**: Added capability to filter attendance records by Class, Student Name/ID, and Period (Daily, Weekly, Monthly, Yearly, Custom Range).
+    - **Backend Logic**: Implemented dynamic `getHistory` method in `Attendance` model to support complex queries.
+- **Report Cards**:
+    - **Digital Signatures**: Added functionality to upload and display Headteacher and Class Teacher signatures.
+    - **Signature Settings**: New options in Report Card Settings to toggle signature visibility.
+    - **Print & PDF**: Updated print and PDF templates to include signatures when enabled.
+- **Staff Portal**:
+    - **Dashboard**: Added "My Subjects" and "Recent Exams" sections for quick access.
+    - **Timetable**: Implemented teacher-specific timetable view.
+    - **Academics**: Added Student Performance tracking view for subject teachers.
+    - **Context Awareness**: Improved role detection logic for smoother portal navigation.
+- **Parent Portal**:
+    - **Profile Support**: Implemented extensive profile data retrieval for parents.
+- **General Enhancements**:
+    - **Security**: Added "Show Password" toggle for easier credential management.
+    - **Reporting**: Enhanced Exam Dropdown in reports to show Exam Date and Description.
+    - **UI/UX**: Added collapsible accordion for Academic Records in Student Profiles.
+- **Bug Fixes**:
+    - **Reports**: Fixed non-numeric value warning in `AcademicReportController` during export.
+    - **Academic Records**: Fixed missing remarks in student profile academic history.
+    - **Timetable**: Resolved case sensitivity issue with day names (monday vs Monday).
+    - **Staff Dashboard**: Fixed "View Subjects" modal button functionality.
+
+### [Previous] - 2026-02-03
 - **Staff Management**:
     - **Enhanced Staff Modal**: Now displays assigned subjects along with their corresponding classes in the teacher details view.
     - **Data Integrity**: Verified and fixed `StaffModel` queries to correctly join class data.

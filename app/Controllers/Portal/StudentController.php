@@ -62,7 +62,8 @@ class StudentController extends Controller
         $this->view('portal/student/dashboard', [
             'student' => $student,
             'fee_balance' => $balance,
-            'exam_count' => $resultCount
+            'exam_count' => $resultCount,
+            'portal_role' => 'student' // Explicitly set role
         ]);
     }
 

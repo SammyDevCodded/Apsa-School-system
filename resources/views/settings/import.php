@@ -35,7 +35,18 @@ ob_start();
                 <form action="/settings/import/students" method="POST" class="px-4 py-5 sm:p-6" enctype="multipart/form-data">
                     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                         <div class="sm:col-span-6">
-                            <label for="students_file" class="block text-sm font-medium text-gray-700">Select Student File</label>
+                            <label for="class_id" class="block text-sm font-medium text-gray-700">Target Class <span class="text-red-500">*</span></label>
+                            <select id="class_id" name="class_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" required>
+                                <option value="">-- Select Target Class --</option>
+                                <?php foreach ($classes as $class): ?>
+                                    <option value="<?= $class['id'] ?>"><?= htmlspecialchars($class['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="mt-2 text-sm text-gray-500">All imported students will be assigned to this class. Class fees will be automatically processed and assigned upon successful import.</p>
+                        </div>
+                        
+                        <div class="sm:col-span-6">
+                            <label for="students_file" class="block text-sm font-medium text-gray-700">Select Student File <span class="text-red-500">*</span></label>
                             <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                                 <div class="space-y-1 text-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -44,7 +55,7 @@ ob_start();
                                     <div class="flex text-sm text-gray-600">
                                         <label for="students_file" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                                             <span>Upload a file</span>
-                                            <input id="students_file" name="students_file" type="file" class="sr-only" accept=".csv,.xls,.xlsx">
+                                            <input id="students_file" name="students_file" type="file" class="sr-only" accept=".csv,.xls,.xlsx" required>
                                         </label>
                                         <p class="pl-1">or drag and drop</p>
                                     </div>
@@ -56,7 +67,7 @@ ob_start();
                     </div>
 
                     <div class="mt-6 flex items-center justify-between">
-                        <a href="/settings/import/sample/students" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <a href="/settings/import/sample/students" id="student-sample-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                             Download Sample Format
                         </a>
                         <div class="space-x-3">
@@ -126,6 +137,23 @@ ob_start();
 </div>
 
 <script>
+// Handle dynamic sample template URL based on class selection
+const classSelector = document.getElementById('class_id');
+if (classSelector) {
+    classSelector.addEventListener('change', function(e) {
+        const classId = e.target.value;
+        const sampleBtn = document.getElementById('student-sample-btn');
+        if (classId) {
+            sampleBtn.href = '/settings/import/sample/students?class_id=' + classId;
+        } else {
+            sampleBtn.href = '/settings/import/sample/students';
+        }
+    });
+
+    // Fire event once on load to set initial state correctly in case of back-button caching
+    classSelector.dispatchEvent(new Event('change'));
+}
+
 // Handle file selection for students
 document.getElementById('students_file').addEventListener('change', function(e) {
     const fileName = e.target.files[0] ? e.target.files[0].name : '';

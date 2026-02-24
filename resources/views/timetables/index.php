@@ -72,6 +72,12 @@ ob_start();
                     <button type="button" id="clear-filters" class="ml-2 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Clear
                     </button>
+                    <button type="button" id="print-timetable-btn" class="ml-2 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="h-4 w-4 mr-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print
+                    </button>
                 </div>
             </form>
         </div>
@@ -209,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter form
     const filterForm = document.getElementById('filter-form');
     const clearFiltersBtn = document.getElementById('clear-filters');
+    const printTimetableBtn = document.getElementById('print-timetable-btn');
     
     // Open add timetable modal
     if (addTimetableBtn) {
@@ -371,6 +378,23 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('filter_subject_id').value = '';
         filterForm.dispatchEvent(new Event('submit'));
     });
+
+    // Print functionality
+    if (printTimetableBtn) {
+        printTimetableBtn.addEventListener('click', function() {
+            const classId = document.getElementById('filter_class_id').value;
+            const staffId = document.getElementById('filter_staff_id').value;
+            const subjectId = document.getElementById('filter_subject_id').value;
+            
+            const params = new URLSearchParams();
+            if (classId) params.append('class_id', classId);
+            if (staffId) params.append('staff_id', staffId);
+            if (subjectId) params.append('subject_id', subjectId);
+            
+            const url = `/timetables/print?${params.toString()}`;
+            window.open(url, '_blank', 'height=800,width=1000');
+        });
+    }
     
     // Initialize add form
     function initializeAddForm() {

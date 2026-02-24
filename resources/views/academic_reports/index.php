@@ -22,9 +22,33 @@ ob_start();
                             <select name="exam_id" id="exam_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
                                 <option value="">Select an exam</option>
                                 <?php foreach ($exams as $exam): ?>
+                                    <?php 
+                                        $label = $exam['name'];
+                                        if (!empty($exam['date'])) {
+                                            $label .= ' (' . date('M j, Y', strtotime($exam['date'])) . ')';
+                                        }
+                                        if (!empty($exam['description'])) {
+                                            $desc = $exam['description'];
+                                            if (strlen($desc) > 50) $desc = substr($desc, 0, 50) . '...';
+                                            $label .= ' - ' . $desc;
+                                        }
+                                        // Still include Year/Term for context if needed, or maybe replace it?
+                                        // The user asked for "date and description from exams page".
+                                        // The previous format was Name (Year - Term).
+                                        // I'll append Year/Term at the end or keep it if it fits, but user specifically asked for date/desc.
+                                        // Let's stick to the requested format: Name (Date) - Description.
+                                        // But Year/Term is useful info. I'll add it in brackets if not redundant?
+                                        // Actually, let's just use the requested format.
+                                        // Wait, the current one shows (Year - Term). 
+                                        // I will ADD Date and Description.
+                                        // $label currently has Name (Date) - Description.
+                                        // I'll add (Year - Term) at the end if it's not too long?
+                                        // User request: "add the date and discription".
+                                        // I'll format: Name (Date) - Description [Year - Term]
+                                        $label .= ' [' . ($exam['academic_year_name'] ?? 'N/A') . ' - ' . ($exam['term'] ?? 'N/A') . ']';
+                                    ?>
                                     <option value="<?= $exam['id'] ?>">
-                                        <?= htmlspecialchars($exam['name']) ?> 
-                                        (<?= htmlspecialchars($exam['academic_year_name'] ?? 'N/A') ?> - <?= htmlspecialchars($exam['term'] ?? 'N/A') ?>)
+                                        <?= htmlspecialchars($label) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

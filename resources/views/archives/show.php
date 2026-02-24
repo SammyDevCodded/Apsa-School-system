@@ -1,14 +1,14 @@
 <?php 
-$title = 'Archive Record Details'; 
+$title = 'Historical Record Details'; 
 ob_start(); 
 ?>
 
 <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-semibold text-gray-900">Archive Record Details</h1>
+            <h1 class="text-2xl font-semibold text-gray-900">Historical Record Details</h1>
             <a href="/archives" class="text-indigo-600 hover:text-indigo-900">
-                Back to Archive
+                Back to School Database
             </a>
         </div>
 

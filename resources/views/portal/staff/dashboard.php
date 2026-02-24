@@ -78,6 +78,64 @@
             <?php endif; ?>
         </div>
     </div>
+        </div>
+    </div>
+</div>
+
+<!-- Academic Data Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+    <!-- My Subjects -->
+    <div class="glass-panel p-6 rounded-xl">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            My Subjects
+        </h3>
+        <?php if (empty($my_subjects)): ?>
+            <p class="text-white/60 italic">No subjects assigned.</p>
+        <?php else: ?>
+            <div class="space-y-3">
+                <?php foreach ($my_subjects as $sub): ?>
+                <div class="bg-white/5 p-4 rounded-lg flex justify-between items-center border border-white/5 hover:bg-white/10 transition">
+                    <div>
+                        <p class="font-bold text-white"><?= htmlspecialchars($sub['name']) ?></p>
+                        <p class="text-white/60 text-xs uppercase tracking-wide"><?= htmlspecialchars($sub['code']) ?></p>
+                    </div>
+                    <?php if (!empty($sub['class_name'])): ?>
+                    <span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 rounded text-xs">
+                        <?= htmlspecialchars($sub['class_name']) ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Recent Exams -->
+    <div class="glass-panel p-6 rounded-xl">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            Recent Exams
+        </h3>
+        <?php if (empty($recent_exams)): ?>
+            <p class="text-white/60 italic">No recent exams found for your subjects.</p>
+        <?php else: ?>
+            <div class="space-y-3">
+                <?php foreach ($recent_exams as $exam): ?>
+                <div class="bg-white/5 p-4 rounded-lg border-l-4 border-green-500 hover:bg-white/10 transition">
+                    <div class="flex justify-between items-start mb-1">
+                        <h4 class="font-bold text-white"><?= htmlspecialchars($exam['name']) ?></h4>
+                        <span class="text-xs text-white/50"><?= date('M d, Y', strtotime($exam['date'])) ?></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-white/80"><?= htmlspecialchars($exam['academic_year_name'] ?? 'N/A') ?> - <?= htmlspecialchars($exam['term'] ?? '') ?></span>
+                        <span class="text-xs px-2 py-1 rounded bg-white/10 text-white/70"><?= htmlspecialchars($exam['class_name'] ?? 'Multiple Classes') ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php 
