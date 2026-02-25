@@ -451,7 +451,7 @@
                     </div>
                     <div class="ml-3 relative">
                         <?php if (isset($_SESSION['user'])): ?>
-                        <button onclick="if(typeof window.lockSystem === 'function') window.lockSystem();" class="text-sm text-yellow-600 hover:text-yellow-800 mr-4 flex items-center font-bold" title="Instant Lock">
+                        <button onclick="if(confirm('Are you sure you want to lock the system?')) { if(typeof window.lockSystem === 'function') window.lockSystem(); }" class="text-sm text-yellow-600 hover:text-yellow-800 mr-4 flex items-center font-bold" title="Instant Lock">
                             <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
@@ -1035,7 +1035,7 @@
         $idleTimeoutMinutes = (int)($appSettingsForTimeout['idle_timeout_minutes'] ?? 0);
         
         // Only output if user is logged in
-        if (isset($_SESSION['user']) && $idleTimeoutMinutes > 0):
+        if (isset($_SESSION['user'])):
         ?>
         <div id="idle-timeout-overlay" class="fixed inset-0 z-[9999] hidden glass-morphism flex items-center justify-center transition-opacity duration-300" style="z-index: 9999;">
             <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all">
@@ -1083,8 +1083,6 @@
             window.SYSTEM_IS_LOCKED = false;
             
             (function() {
-                if (window.SYSTEM_TIMEOUT_MINUTES <= 0) return;
-                
                 const LOCK_KEY = 'system_is_locked';
                 const TIMEOUT_MS = window.SYSTEM_TIMEOUT_MINUTES * 60 * 1000;
                 // Using 20s warning duration
@@ -1155,9 +1153,11 @@
                 }
 
                 // Event Listeners for Activity
-                ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
-                    document.addEventListener(evt, updateActivity, {passive: true});
-                });
+                if (window.SYSTEM_TIMEOUT_MINUTES > 0) {
+                    ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+                        document.addEventListener(evt, updateActivity, {passive: true});
+                    });
+                }
 
                 // Listen for locks/unlocks from other tabs
                 window.addEventListener('storage', (e) => {
@@ -1179,7 +1179,9 @@
                     showLock();
                 } 
                 
-                checkInterval = setInterval(checkIdle, 1000);
+                if (window.SYSTEM_TIMEOUT_MINUTES > 0) {
+                    checkInterval = setInterval(checkIdle, 1000);
+                }
 
                 // Unlock Form Submission
                 form.addEventListener('submit', async (e) => {
