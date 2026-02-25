@@ -281,6 +281,33 @@
         </div>
     </div>
     
+    <!-- Lock Confirmation Modal -->
+    <div id="lock-confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-filter backdrop-blur-sm transition-opacity duration-300">
+        <div class="glass-morphism rounded-lg shadow-2xl w-full max-w-sm transform scale-100 transition-transform duration-300">
+            <div class="p-6 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                    <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-2">Lock System</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        Are you sure you want to lock the system? You will need your password to unlock.
+                    </p>
+                </div>
+                <div class="flex justify-center gap-4 mt-6">
+                    <button onclick="document.getElementById('lock-confirm-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-md transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button onclick="document.getElementById('lock-confirm-modal').classList.add('hidden'); if(typeof window.lockSystem === 'function') window.lockSystem();" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-200">
+                        Lock System
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Navigation -->
     <!-- Navigation -->
     <nav class="glass-morphism sticky top-0 z-40 w-full transition-all duration-300">
@@ -451,7 +478,7 @@
                     </div>
                     <div class="ml-3 relative">
                         <?php if (isset($_SESSION['user'])): ?>
-                        <button onclick="if(confirm('Are you sure you want to lock the system?')) { if(typeof window.lockSystem === 'function') window.lockSystem(); }" class="text-sm text-yellow-600 hover:text-yellow-800 mr-4 flex items-center font-bold" title="Instant Lock">
+                        <button onclick="document.getElementById('lock-confirm-modal').classList.remove('hidden');" class="text-sm text-yellow-600 hover:text-yellow-800 mr-4 flex items-center font-bold" title="Instant Lock">
                             <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
