@@ -9,6 +9,7 @@ $router->post('/login', 'AuthController@login');
 $router->get('/logout', 'AuthController@logout');
 $router->get('/register', 'AuthController@showRegisterForm');
 $router->post('/register', 'AuthController@register');
+$router->post('/auth/unlock', 'AuthController@unlock');
 
 // Dashboard route (requires authentication)
 $router->get('/dashboard', 'DashboardController@index', ['auth']);

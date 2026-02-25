@@ -18,7 +18,8 @@ class Setting extends Model
         'student_admission_prefix',
         'student_admission_prefix',
         'staff_employee_prefix',
-        'time_offset_seconds'
+        'time_offset_seconds',
+        'idle_timeout_minutes'
     ];
 
     public function __construct()

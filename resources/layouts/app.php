@@ -432,14 +432,16 @@
                 </div>
                 <div class="hidden sm:ml-6 sm:flex sm:items-center">
                     <div class="ml-3 relative">
+                        <?php if (isset($_SESSION['user'])): ?>
                         <div>
-                            <button class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <button id="profile-button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:ring-indigo-500 transition-shadow cursor-pointer">
                                 <span class="sr-only">Open user menu</span>
-                                <span class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center">
+                                <span class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
                                     <?= substr($_SESSION['user']['username'] ?? 'U', 0, 1) ?>
                                 </span>
                             </button>
                         </div>
+                        <?php endif; ?>
                     </div>
                     <div class="ml-3 relative">
                         <button id="notification-button" class="text-sm text-gray-700 hover:text-gray-900 mr-4 relative">
@@ -449,11 +451,11 @@
                     </div>
                     <div class="ml-3 relative">
                         <?php if (isset($_SESSION['user'])): ?>
-                        <button id="profile-button" class="text-sm text-gray-700 hover:text-gray-900 mr-4 flex items-center">
-                            <span>Profile</span>
-                            <svg class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        <button onclick="if(typeof window.lockSystem === 'function') window.lockSystem();" class="text-sm text-yellow-600 hover:text-yellow-800 mr-4 flex items-center font-bold" title="Instant Lock">
+                            <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                             </svg>
+                            Lock
                         </button>
                         <?php endif; ?>
                     </div>
@@ -1027,5 +1029,200 @@
 
         });
     </script>
+        <!-- System Idle Timeout Overlay -->
+        <?php
+        $appSettingsForTimeout = (new \App\Models\Setting())->getSettings();
+        $idleTimeoutMinutes = (int)($appSettingsForTimeout['idle_timeout_minutes'] ?? 0);
+        
+        // Only output if user is logged in
+        if (isset($_SESSION['user']) && $idleTimeoutMinutes > 0):
+        ?>
+        <div id="idle-timeout-overlay" class="fixed inset-0 z-[9999] hidden glass-morphism flex items-center justify-center transition-opacity duration-300" style="z-index: 9999;">
+            <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all">
+                <div class="text-center mb-6">
+                    <svg class="mx-auto h-12 w-12 text-indigo-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <h3 class="text-xl font-bold text-gray-900">System Locked</h3>
+                    <p class="text-sm text-gray-500 mt-2">The system was locked due to inactivity. Please enter your password to unlock.</p>
+                </div>
+                
+                <form id="unlock-form" class="space-y-4">
+                    <div>
+                        <label for="unlock_password" class="sr-only">Password</label>
+                        <input type="password" id="unlock_password" placeholder="Enter Password" required
+                            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    </div>
+                    <div id="unlock-error" class="hidden text-sm text-red-600 bg-red-50 p-2 rounded"></div>
+                    <button type="submit" id="unlock-submit"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Unlock System
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="idle-warning-toast" class="fixed bottom-4 right-4 z-[9998] hidden bg-yellow-50 border border-yellow-200 p-4 rounded-lg shadow-lg">
+            <div class="flex flex-col sm:flex-row items-center">
+                <div class="flex-shrink-0 mb-2 sm:mb-0">
+                    <svg class="h-6 w-6 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-0 sm:ml-3 text-center sm:text-left">
+                    <h3 class="text-sm font-bold text-yellow-800">Inactivity Warning</h3>
+                    <div class="mt-1 text-sm text-yellow-700">
+                        <p>System will lock in <span id="idle-countdown" class="font-bold text-lg text-red-600">20</span> seconds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            window.SYSTEM_TIMEOUT_MINUTES = <?= $idleTimeoutMinutes ?>;
+            window.SYSTEM_IS_LOCKED = false;
+            
+            (function() {
+                if (window.SYSTEM_TIMEOUT_MINUTES <= 0) return;
+                
+                const LOCK_KEY = 'system_is_locked';
+                const TIMEOUT_MS = window.SYSTEM_TIMEOUT_MINUTES * 60 * 1000;
+                // Using 20s warning duration
+                const WARNING_MS = 20 * 1000; 
+                let lastActivity = Date.now();
+                let checkInterval;
+
+                const overlay = document.getElementById('idle-timeout-overlay');
+                const warningToast = document.getElementById('idle-warning-toast');
+                const countdownSpan = document.getElementById('idle-countdown');
+                const form = document.getElementById('unlock-form');
+                const passwordInput = document.getElementById('unlock_password');
+                const errorDiv = document.getElementById('unlock-error');
+                const submitBtn = document.getElementById('unlock-submit');
+
+                function updateActivity() {
+                    if (!window.SYSTEM_IS_LOCKED) {
+                        lastActivity = Date.now();
+                        hideWarning();
+                    }
+                }
+
+                // Global function for manual instant lock
+                window.lockSystem = function() {
+                    localStorage.setItem(LOCK_KEY, Date.now().toString());
+                    showLock();
+                };
+
+                function showLock() {
+                    if (window.SYSTEM_IS_LOCKED) return;
+                    window.SYSTEM_IS_LOCKED = true;
+                    hideWarning();
+                    overlay.classList.remove('hidden');
+                    // Ensure full scroll lock
+                    document.body.style.overflow = 'hidden';
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+
+                function showWarning(timeLeft) {
+                    if (window.SYSTEM_IS_LOCKED) return;
+                    warningToast.classList.remove('hidden');
+                    countdownSpan.textContent = Math.ceil(timeLeft / 1000);
+                }
+
+                function hideWarning() {
+                    warningToast.classList.add('hidden');
+                }
+
+                function checkIdle() {
+                    if (window.SYSTEM_IS_LOCKED) return;
+                    
+                    // Check localstorage for cross-tab locking
+                    if (localStorage.getItem(LOCK_KEY)) {
+                        showLock();
+                        return;
+                    }
+
+                    const idleTime = Date.now() - lastActivity;
+                    
+                    if (idleTime >= TIMEOUT_MS) {
+                        window.lockSystem(); // Triggers across tabs
+                    } else if (idleTime >= (TIMEOUT_MS - WARNING_MS)) {
+                        showWarning(TIMEOUT_MS - idleTime);
+                    } else {
+                        hideWarning();
+                    }
+                }
+
+                // Event Listeners for Activity
+                ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+                    document.addEventListener(evt, updateActivity, {passive: true});
+                });
+
+                // Listen for locks/unlocks from other tabs
+                window.addEventListener('storage', (e) => {
+                    if (e.key === LOCK_KEY) {
+                        if (e.newValue) {
+                            showLock();
+                        } else {
+                            // Unlocked from another tab
+                            window.SYSTEM_IS_LOCKED = false;
+                            overlay.classList.add('hidden');
+                            document.body.style.overflow = '';
+                            lastActivity = Date.now();
+                        }
+                    }
+                });
+
+                // Initial Setup
+                if (localStorage.getItem(LOCK_KEY)) {
+                    showLock();
+                } 
+                
+                checkInterval = setInterval(checkIdle, 1000);
+
+                // Unlock Form Submission
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    errorDiv.classList.add('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Unlocking...';
+
+                    try {
+                        const response = await fetch('/auth/unlock', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: 'password=' + encodeURIComponent(passwordInput.value)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            // Unlock success
+                            localStorage.removeItem(LOCK_KEY);
+                            window.SYSTEM_IS_LOCKED = false;
+                            overlay.classList.add('hidden');
+                            document.body.style.overflow = '';
+                            lastActivity = Date.now();
+                        } else {
+                            errorDiv.textContent = result.message || 'Invalid password';
+                            errorDiv.classList.remove('hidden');
+                        }
+                    } catch (err) {
+                        errorDiv.textContent = 'Error verifying password. Check connection.';
+                        errorDiv.classList.remove('hidden');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Unlock System';
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                    }
+                });
+            })();
+        </script>
+        <?php endif; ?>
 </body>
 </html>

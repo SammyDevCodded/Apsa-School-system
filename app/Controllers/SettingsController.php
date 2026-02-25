@@ -180,6 +180,7 @@ class SettingsController extends Controller
         $school_address = $_POST['school_address'] ?? '';
         $school_logo = $_FILES['school_logo'] ?? null;
         $currency_symbol = $_POST['currency_symbol'] ?? 'GH₵';
+        $idle_timeout = $_POST['idle_timeout_minutes'] ?? 0;
         
         // Determine currency code based on symbol
         $currency_code = $this->currencyOptions[$currency_symbol] ?? 'GHS';
@@ -189,7 +190,8 @@ class SettingsController extends Controller
             'school_name' => $school_name,
             'school_address' => $school_address,
             'currency_code' => $currency_code,
-            'currency_symbol' => $currency_symbol
+            'currency_symbol' => $currency_symbol,
+            'idle_timeout_minutes' => (int)$idle_timeout
         ];
 
         // Handle file upload if a new logo was provided
