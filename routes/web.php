@@ -62,6 +62,16 @@ $router->get('/finance', 'FinanceController@index', ['auth']);
 $router->post('/finance/report-details', 'FinanceController@reportDetails', ['auth']);
 $router->get('/finance/fee-details/([0-9]+)', 'FinanceController@getFeeDetails', ['auth']);
 
+// Expense Tracking routes (require authentication)
+$router->get('/finance/expenses', 'ExpenseController@index', ['auth']);
+$router->post('/finance/expenses/category', 'ExpenseController@saveCategory', ['auth']);
+$router->post('/finance/expenses/category/delete', 'ExpenseController@deleteCategory', ['auth']);
+$router->post('/finance/expenses/save', 'ExpenseController@saveExpense', ['auth']);
+$router->post('/finance/expenses/delete', 'ExpenseController@deleteExpense', ['auth']);
+$router->post('/finance/expenses/request', 'ExpenseController@savePaymentRequest', ['auth']);
+$router->post('/finance/expenses/request/status', 'ExpenseController@updatePaymentRequestStatus', ['auth']);
+$router->post('/finance/expenses/request/delete', 'ExpenseController@deletePaymentRequest', ['auth']);
+
 // Payment routes (require authentication)
 $router->get('/payments', 'PaymentController@index', ['auth']);
 $router->get('/payments/create', 'PaymentController@create', ['auth']);

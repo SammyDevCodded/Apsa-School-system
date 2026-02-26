@@ -184,6 +184,13 @@ ob_start();
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Unconditionally clear lock state for all users when arriving at login
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('system_is_locked')) {
+                localStorage.removeItem(key);
+            }
+        });
+
         // Shake animation for error message if present
         const errorMessage = document.getElementById('error-message');
         if (errorMessage) {

@@ -278,11 +278,15 @@ class SettingsController extends Controller
         // Validate input
         $student_admission_prefix = $_POST['student_admission_prefix'] ?? 'EPI';
         $staff_employee_prefix = $_POST['staff_employee_prefix'] ?? 'StID';
+        $student_auto_format = $_POST['student_auto_format'] ?? 'timestamp';
+        $staff_auto_format = $_POST['staff_auto_format'] ?? 'timestamp';
 
         // Prepare data for update
         $data = [
             'student_admission_prefix' => $student_admission_prefix,
-            'staff_employee_prefix' => $staff_employee_prefix
+            'staff_employee_prefix' => $staff_employee_prefix,
+            'student_auto_format' => $student_auto_format,
+            'staff_auto_format' => $staff_auto_format
         ];
 
         // Update settings in database
@@ -490,16 +494,15 @@ class SettingsController extends Controller
             $this->redirect('/dashboard');
         }
         
-        // Get settings to get the prefix
-        $settings = $this->settingModel->getSettings();
-        $prefix = $settings['student_admission_prefix'] ?? 'EPI';
-        
-        // Generate admission number in format: [Prefix][HHMMSS]
-        $timestamp = date('His'); // HHMMSS format
-        $admissionNumber = $prefix . '-' . $timestamp;
+        // Generate admission number
+        $admissionNumber = \App\Helpers\IdGeneratorHelper::generateAdmissionNumber();
+        $formatDescription = \App\Helpers\IdGeneratorHelper::getAdmissionFormatDescription();
         
         // Return the generated number
-        echo json_encode(['admission_number' => $admissionNumber]);
+        echo json_encode([
+            'admission_number' => $admissionNumber,
+            'format_description' => $formatDescription
+        ]);
     }
     
     // New method to generate employee ID
@@ -515,13 +518,8 @@ class SettingsController extends Controller
             $this->redirect('/dashboard');
         }
         
-        // Get settings to get the prefix
-        $settings = $this->settingModel->getSettings();
-        $prefix = $settings['staff_employee_prefix'] ?? 'StID';
-        
-        // Generate employee ID in format: [Prefix][HHMMSS]
-        $timestamp = date('His'); // HHMMSS format
-        $employeeId = $prefix . '-' . $timestamp;
+        // Generate employee ID
+        $employeeId = \App\Helpers\IdGeneratorHelper::generateEmployeeId();
         
         // Return the generated ID
         echo json_encode(['employee_id' => $employeeId]);

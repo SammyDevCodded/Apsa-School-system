@@ -167,6 +167,10 @@ class FinanceController extends Controller
             
             $studentBills = $feeAssignmentModel->getAllStudentBills($page, $perPage, $filters, $searchTerm);
             
+            // Get School Settings
+            $settingModel = new \App\Models\Setting();
+            $settings = $settingModel->getSettings();
+            
             $this->view('finance/index', [
                 'tab' => $tab,
                 'fees' => $processedFees,
@@ -180,7 +184,8 @@ class FinanceController extends Controller
                 'dateFrom' => $dateFrom,
                 'dateTo' => $dateTo,
                 'enableDateFilter' => $enableDateFilter,
-                'perPage' => $perPage
+                'perPage' => $perPage,
+                'settings' => $settings
             ]);
         } else {
             // Get payments with filtering and pagination (existing functionality)
@@ -189,6 +194,10 @@ class FinanceController extends Controller
             
             // Get report data based on report type
             $reportData = $this->getReportData($paymentModel, $reportType, $filters, $searchTerm);
+            
+            // Get School Settings
+            $settingModel = new \App\Models\Setting();
+            $settings = $settingModel->getSettings();
             
             $this->view('finance/index', [
                 'tab' => $tab,
@@ -205,7 +214,8 @@ class FinanceController extends Controller
                 'term' => $term,
                 'perPage' => $perPage,
                 'reportType' => $reportType,
-                'reportData' => $reportData
+                'reportData' => $reportData,
+                'settings' => $settings
             ]);
         }
     }

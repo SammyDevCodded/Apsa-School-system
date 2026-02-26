@@ -195,6 +195,10 @@ class StudentController extends Controller
         // We can sort keys if needed, but array order depends on first insertion.
 
         
+        // Get school settings for branding
+        $settingModel = new \App\Models\Setting();
+        $settings = $settingModel->getSettings();
+        
         if ($this->isAjaxRequest()) {
             // For AJAX requests, return JSON data for the modal
             $this->jsonResponse([
@@ -210,7 +214,8 @@ class StudentController extends Controller
                 'financialInfo' => $financialInfo,
                 'promotionHistory' => $promotionHistory,
                 'currentAcademicYear' => $currentAcademicYear,
-                'groupedAttendance' => $groupedAttendance
+                'groupedAttendance' => $groupedAttendance,
+                'settings' => $settings
             ]);
         }
     }
@@ -236,12 +241,14 @@ class StudentController extends Controller
         
         // Generate a default admission number using the helper
         $defaultAdmissionNo = IdGeneratorHelper::generateAdmissionNumber();
+        $formatDescription = IdGeneratorHelper::getAdmissionFormatDescription();
         
         if ($this->isAjaxRequest()) {
             // For AJAX requests, only render the form content without the layout
             $this->view('students/partials/create_form', [
                 'classes' => $classes,
                 'defaultAdmissionNo' => $defaultAdmissionNo,
+                'formatDescription' => $formatDescription,
                 'currentAcademicYear' => $currentAcademicYear
             ]);
         } else {
@@ -249,6 +256,7 @@ class StudentController extends Controller
             $this->view('students/create', [
                 'classes' => $classes,
                 'defaultAdmissionNo' => $defaultAdmissionNo,
+                'formatDescription' => $formatDescription,
                 'currentAcademicYear' => $currentAcademicYear
             ]);
         }
@@ -305,10 +313,23 @@ class StudentController extends Controller
             }
             
             // Basic validation
-            if (empty($data['admission_no']) || empty($data['first_name']) || empty($data['last_name'])) {
-                $this->flash('error', 'Admission number, first name, and last name are required');
+            $requiredFields = ['admission_no' => 'Admission number', 'first_name' => 'First name', 'last_name' => 'Last name', 'dob' => 'Date of birth', 'gender' => 'Gender', 'class_id' => 'Class', 'guardian_phone' => 'Guardian phone'];
+            $missingFields = [];
+            foreach ($requiredFields as $field => $label) {
+                if (empty($data[$field])) {
+                    $missingFields[] = $label;
+                }
+            }
+            
+            if ($data['student_category'] === 'international' && empty($data['student_category_details'])) {
+                $missingFields[] = 'Category details';
+            }
+            
+            if (!empty($missingFields)) {
+                $errorMessage = 'The following fields are required: ' . implode(', ', $missingFields);
+                $this->flash('error', $errorMessage);
                 if ($this->isAjaxRequest()) {
-                    $this->jsonResponse(['error' => 'Admission number, first name, and last name are required'], 400);
+                    $this->jsonResponse(['error' => $errorMessage], 400);
                 } else {
                     $this->redirect('/students/create');
                 }
@@ -429,11 +450,14 @@ class StudentController extends Controller
         $academicYearModel = new AcademicYear();
         $currentAcademicYear = $academicYearModel->getCurrent();
         
+        $formatDescription = IdGeneratorHelper::getAdmissionFormatDescription();
+        
         if ($this->isAjaxRequest()) {
             // For AJAX requests, only render the form content without the layout
             $this->view('students/partials/edit_form', [
                 'student' => $student,
                 'classes' => $classes,
+                'formatDescription' => $formatDescription,
                 'currentAcademicYear' => $currentAcademicYear
             ]);
         } else {
@@ -441,6 +465,7 @@ class StudentController extends Controller
             $this->view('students/edit', [
                 'student' => $student,
                 'classes' => $classes,
+                'formatDescription' => $formatDescription,
                 'currentAcademicYear' => $currentAcademicYear
             ]);
         }
@@ -507,11 +532,24 @@ class StudentController extends Controller
             }
             
             // Basic validation
-            if (empty($data['admission_no']) || empty($data['first_name']) || empty($data['last_name'])) {
+            $requiredFields = ['admission_no' => 'Admission number', 'first_name' => 'First name', 'last_name' => 'Last name', 'dob' => 'Date of birth', 'gender' => 'Gender', 'class_id' => 'Class', 'guardian_phone' => 'Guardian phone'];
+            $missingFields = [];
+            foreach ($requiredFields as $field => $label) {
+                if (empty($data[$field])) {
+                    $missingFields[] = $label;
+                }
+            }
+            
+            if ($data['student_category'] === 'international' && empty($data['student_category_details'])) {
+                $missingFields[] = 'Category details';
+            }
+            
+            if (!empty($missingFields)) {
+                $errorMessage = 'The following fields are required: ' . implode(', ', $missingFields);
                 if ($this->isAjaxRequest()) {
-                    $this->jsonResponse(['error' => 'Admission number, first name, and last name are required'], 400);
+                    $this->jsonResponse(['error' => $errorMessage], 400);
                 } else {
-                    $this->flash('error', 'Admission number, first name, and last name are required');
+                    $this->flash('error', $errorMessage);
                     $this->redirect("/students/{$id}/edit");
                 }
                 return;

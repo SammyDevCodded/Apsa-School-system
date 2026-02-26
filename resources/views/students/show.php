@@ -486,9 +486,35 @@ $activeTab = $_GET['tab'] ?? 'academic';
         <!-- Financial Information Tab -->
         <div id="financial-tab-content" class="bg-white shadow sm:rounded-lg tab-content <?= $activeTab === 'financial' ? 'block' : 'hidden' ?>">
 
-            <div class="px-4 py-5 sm:px-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Financial Information</h3>
-                <p class="mt-1 max-w-2xl text-sm text-gray-500">Payments and outstanding bills</p>
+            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Financial Information</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Payments and outstanding bills</p>
+                </div>
+                <div class="relative inline-block text-left">
+                    <div>
+                        <button type="button" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" id="print-financial-options-btn" aria-expanded="true" aria-haspopup="true">
+                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                            </svg>
+                            Print
+                            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="print-financial-dropdown" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10" role="menu" aria-orientation="vertical" aria-labelledby="print-financial-options-btn" tabindex="-1">
+                        <div class="py-1" role="none">
+                            <button class="w-full text-left font-bold text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="print-financial-summary">
+                                Print Financial Summary Only
+                            </button>
+                            <button class="w-full text-left font-bold text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="print-financial-full">
+                                Print Summary & Payment History
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="border-t border-gray-200">
                 <!-- DEBUG: -->
@@ -649,10 +675,19 @@ $activeTab = $_GET['tab'] ?? 'academic';
                             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                 <div class="sm:flex sm:items-start">
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                        <div class="flex justify-between items-center w-full">
-                                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Fee Details</h3>
-                                            <div class="text-sm text-gray-500">
-                                                Student: <span class="font-medium text-gray-900"><?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?></span> (<?= htmlspecialchars($student['admission_no']) ?>)
+                                        <div class="flex justify-between items-start w-full mb-4 border-b pb-4">
+                                            <div class="flex items-center space-x-4">
+                                                <?php if (!empty($settings['school_logo'])): ?>
+                                                    <img src="<?= htmlspecialchars($settings['school_logo']) ?>" alt="School Logo" class="h-12 w-auto object-contain">
+                                                <?php endif; ?>
+                                                <div>
+                                                    <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($settings['school_name'] ?? 'School Management System') ?></h2>
+                                                    <h3 class="text-md font-medium text-gray-600" id="modal-title">Fee Details</h3>
+                                                </div>
+                                            </div>
+                                            <div class="text-sm text-gray-500 text-right">
+                                                Student: <span class="font-medium text-gray-900"><?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?></span><br>
+                                                (<?= htmlspecialchars($student['admission_no']) ?>)
                                             </div>
                                         </div>
                                         
@@ -820,18 +855,27 @@ $activeTab = $_GET['tab'] ?? 'academic';
                                 <title>Fee Details - ${currentFeeData.name}</title>
                                 <style>
                                     body { font-family: Arial, sans-serif; padding: 20px; }
-                                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+                                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                                    .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
+                                    .report-title { font-size: 18px; margin: 10px 0; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+                                    .student-info { margin: 15px 0 5px 0; font-size: 16px; }
                                     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-                                    .summary-box { background-color: #f9f9f9; padding: 15px; border-radius: 5px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+                                    .summary-box { background-color: #f9f9f9; padding: 15px; border-radius: 5px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; border: 1px solid #ddd; }
                                     .label { font-size: 12px; color: #666; text-transform: uppercase; }
                                     .value { font-weight: bold; font-size: 16px; margin-top: 5px; }
                                 </style>
                             </head>
                             <body>
                                 <div class="header">
-                                    <h2>Fee Details Report</h2>
-                                    <h3 style="margin: 10px 0;">Student: <?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?> (<?= htmlspecialchars($student['admission_no']) ?>)</h3>
-                                    <p>Date: ${new Date().toLocaleDateString()}</p>
+                                    <?php if (!empty($settings['school_logo'])): ?>
+                                        <img src="<?= htmlspecialchars($settings['school_logo']) ?>" alt="School Logo" class="school-logo">
+                                    <?php endif; ?>
+                                    <h1 class="school-name"><?= htmlspecialchars($settings['school_name'] ?? 'School Management System') ?></h1>
+                                    <div class="report-title">Fee Details Report</div>
+                                    
+                                    <h3 class="student-info">Student: <?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name']) ?> (<?= htmlspecialchars($student['admission_no']) ?>)</h3>
+                                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
                                 </div>
                                 <div class="info-grid">
                                     <div><strong>Fee Name:</strong> ${currentFeeData.name}</div>
@@ -1071,7 +1115,162 @@ document.addEventListener('DOMContentLoaded', function() {
         const tab = event.state && event.state.tab ? event.state.tab : 'academic';
         switchTab(tab);
     });
+    
+    // Handle financial print dropdown toggle
+    const printBtn = document.getElementById('print-financial-options-btn');
+    const printDropdown = document.getElementById('print-financial-dropdown');
+    
+    if (printBtn && printDropdown) {
+        printBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isHidden = printDropdown.classList.contains('hidden');
+            if (isHidden) {
+                printDropdown.classList.remove('hidden');
+            } else {
+                printDropdown.classList.add('hidden');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!printBtn.contains(e.target) && !printDropdown.contains(e.target)) {
+                printDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Handle Print Summary Only
+    const printSummaryBtn = document.getElementById('print-financial-summary');
+    if (printSummaryBtn) {
+        printSummaryBtn.addEventListener('click', function() {
+            printFinancialSection(false);
+            if (printDropdown) printDropdown.classList.add('hidden');
+        });
+    }
+
+    // Handle Print Summary & History
+    const printFullBtn = document.getElementById('print-financial-full');
+    if (printFullBtn) {
+        printFullBtn.addEventListener('click', function() {
+            printFinancialSection(true);
+            if (printDropdown) printDropdown.classList.add('hidden');
+        });
+    }
 });
+
+// Function to print financial section with options
+function printFinancialSection(includeHistory = false) {
+    const studentName = '<?= addslashes($student['first_name'] . " " . $student['last_name']) ?>';
+    const admissionNo = '<?= addslashes($student['admission_no']) ?>';
+    const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+    const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+    const datePrinted = new Date().toLocaleString();
+
+    // Get the HTML content to print
+    const summaryHtml = document.querySelector('#financial-tab-content .overflow-x-auto').outerHTML;
+    
+    // Remove action columns from HTML strings
+    let cleanSummaryHtml = summaryHtml.replace(/<td[^>]*>[\s\S]*?<button[^>]*>Details<\/button>[\s\S]*?<\/td>/g, '');
+    cleanSummaryHtml = cleanSummaryHtml.replace(/<th[^>]*>Action<\/th>/gi, '');
+
+    let historyHtml = '';
+    if (includeHistory) {
+        const historyContainer = document.getElementById('payment-history-container');
+        if (historyContainer) {
+            historyHtml = `<div style="margin-top: 40px; border-top: 2px solid #eee; padding-top: 20px;">
+                <h3 style="font-size: 18px; margin-bottom: 20px; color: #333;">Payment History</h3>
+                ${historyContainer.innerHTML}
+            </div>`;
+            // Remove export buttons and forms from history
+            historyHtml = historyHtml.replace(/<div class="mb-4 flex[^>]*>[\s\S]*?<\/div>/gi, '');
+        }
+    }
+
+    const printWindow = window.open('', '_blank');
+    const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" style="max-height: 80px; margin-bottom: 10px;">` : '';
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Financial Report - ${studentName}</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; padding: 40px; }
+                    .header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #eee; }
+                    .header h1 { margin: 10px 0 0; color: #2c3e50; font-size: 28px; }
+                    .header h2 { margin: 5px 0 0; color: #7f8c8d; font-size: 18px; font-weight: normal; }
+                    .header p { color: #95a5a6; margin: 5px 0 0; font-size: 14px; }
+                    .student-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
+                    .info-group h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; color: #95a5a6; letter-spacing: 1px; }
+                    .info-group p { margin: 0; font-weight: bold; font-size: 16px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+                    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+                    thead { background-color: #f8fafc; }
+                    th { font-weight: 600; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+                    tbody tr:nth-child(even) { background-color: #f8fafc; }
+                    tfoot { background-color: #f1f5f9; font-weight: 700; border-top: 2px solid #cbd5e1; }
+                    .text-xs { font-size: 0.75rem; }
+                    .text-sm { font-size: 0.875rem; }
+                    .text-gray-500 { color: #6b7280; }
+                    .text-gray-900 { color: #111827; }
+                    .bg-green-100 { background-color: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 9999px; }
+                    .bg-red-100 { background-color: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 9999px; }
+                    .bg-yellow-100 { background-color: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 9999px; }
+                    .inline-flex { display: inline-flex; }
+                    .rounded-full { border-radius: 9999px; }
+                    .font-semibold { font-weight: 600; }
+                    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+                    h5, h6 { margin: 20px 0 10px; color: #1e293b; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+                    @media print {
+                        body { padding: 0; }
+                        button { display: none !important; }
+                        a { text-decoration: none !important; color: inherit; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    ${logoHtml}
+                    <h2>${schoolName}</h2>
+                    <h1>Financial Report${includeHistory ? ' & Payment History' : ''}</h1>
+                    <p>Printed on: ${datePrinted}</p>
+                </div>
+                
+                <div class="student-info">
+                    <div class="info-group">
+                        <h3>Student</h3>
+                        <p>${studentName}</p>
+                        <p style="font-weight: normal; font-size: 14px; color: #666;">${admissionNo}</p>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <h3 style="font-size: 18px; margin-bottom: 15px; color: #333;">Financial Summary</h3>
+                    ${cleanSummaryHtml}
+                </div>
+
+                ${historyHtml}
+
+                <div style="margin-top: 40px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    This is a computer-generated document.
+                </div>
+
+                <script>
+                    // Remove any remaining buttons just in case
+                    const buttons = document.querySelectorAll('button');
+                    buttons.forEach(b => b.remove());
+                    
+                    window.onload = function() {
+                        setTimeout(() => {
+                            window.print();
+                        }, 500);
+                    }
+                <\/script>
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+}
 
 // Print Functionality
 function printSection(elementId, title) {

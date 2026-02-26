@@ -1069,33 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Update total pay amount when individual pay amounts change
-    function updateTotalPayAmount() {
-        let totalPayAmount = 0;
-        let hasValidPayments = false;
-        
-        document.querySelectorAll('.pay-amount-input').forEach(input => {
-            const value = parseFloat(input.value) || 0;
-            // Ensure value doesn't exceed balance
-            const max = parseFloat(input.dataset.max) || 0;
-            if (value > max) {
-                input.value = max;
-            }
-            
-            // Add to total if value > 0
-            if (value > 0) {
-                totalPayAmount += value;
-                hasValidPayments = true;
-            }
-        });
-        
-        document.getElementById('total-pay-amount').textContent = '₵' + totalPayAmount.toFixed(2);
-        
-        // Show make payment button if there are valid payments
-        if (hasValidPayments && makePaymentBtn) {
-            makePaymentBtn.classList.remove('hidden');
-        }
-    }
+    // Previous duplicate updateTotalPayAmount removed.
     
     // Load all students
     function loadAllStudents() {
@@ -1430,11 +1404,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTotalPayAmount() {
         let totalPayAmount = 0;
         document.querySelectorAll('.pay-amount-input').forEach(input => {
-            const value = parseFloat(input.value) || 0;
+            let value = parseFloat(input.value) || 0;
             // Ensure value doesn't exceed balance
             const max = parseFloat(input.dataset.max) || 0;
             if (value > max) {
                 input.value = max;
+                value = max;
             }
             totalPayAmount += value;
         });

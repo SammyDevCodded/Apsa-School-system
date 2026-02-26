@@ -376,59 +376,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Load add student form via AJAX
-    function loadAddStudentForm() {
-        fetch('/students/create')
-            .then(response => response.text())
-            .then(html => {
-                // Create a temporary div to parse the HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Extract the form content
-                const formElement = doc.querySelector('form');
-                if (formElement) {
-                    modalContent.innerHTML = formElement.outerHTML;
-                    
-                    // Add event listeners for the form
-                    const form = modalContent.querySelector('form');
-                    form.addEventListener('submit', handleFormSubmit);
-                    
-                    // Re-attach the generate admission number functionality
-                    const generateBtn = modalContent.querySelector('#generate-admission-btn');
-                    const admissionInput = modalContent.querySelector('#admission_no');
-                    
-                    if (generateBtn && admissionInput) {
-                        generateBtn.addEventListener('click', function() {
-                            fetch('/settings/generate/admission')
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.admission_number) {
-                                        admissionInput.value = data.admission_number;
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error generating admission number:', error);
-                                    // Fallback to client-side generation
-                                    const prefix = 'EPI'; // Default prefix
-                                    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '');
-                                    admissionInput.value = prefix + '-' + timestamp;
-                                });
-                        });
-                    }
-                } else {
-                    modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
-            });
-    }
-    
     // Handle form submission
+    let isSubmitting = false;
     function handleFormSubmit(e) {
         e.preventDefault();
+        
+        if (isSubmitting) return;
+        isSubmitting = true;
         
         const form = e.target;
         const formData = new FormData(form);
@@ -463,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Reset button
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
+                isSubmitting = false;
             }
         })
         .catch(error => {
@@ -475,7 +430,94 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset button
             submitBtn.innerHTML = originalBtnText;
             submitBtn.disabled = false;
+            isSubmitting = false;
         });
+    }
+
+    // Load add student form via AJAX
+    function loadAddStudentForm() {
+        modalContent.innerHTML = '<div class="flex justify-center items-center h-32"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
+        isSubmitting = false;
+
+        fetch('/students/create')
+            .then(response => response.text())
+            .then(html => {
+                // Create a temporary div to parse the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Extract the form content
+                const formElement = doc.querySelector('form');
+                if (formElement) {
+                    modalContent.innerHTML = formElement.outerHTML;
+                    
+                    // Add event listeners for the form
+                    const form = modalContent.querySelector('form');
+                    form.addEventListener('submit', handleFormSubmit);
+                    
+                    // Re-attach the generate admission number functionality
+                    const generateBtn = modalContent.querySelector('#generate-admission-btn');
+                    const admissionInput = modalContent.querySelector('#admission_no');
+                    const admissionHint = modalContent.querySelector('#admission_format_hint');
+                    
+                    if (generateBtn && admissionInput) {
+                        generateBtn.addEventListener('click', function() {
+                            fetch('/settings/generate/admission')
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.admission_number) {
+                                        admissionInput.value = data.admission_number;
+                                    }
+                                    if (admissionHint && data.format_description) {
+                                        admissionHint.textContent = data.format_description;
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error generating admission number:', error);
+                                    // Fallback to client-side generation
+                                    const prefix = 'EPI'; // Default prefix
+                                    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '');
+                                    admissionInput.value = prefix + '-' + timestamp;
+                                });
+                        });
+                    }
+
+                    // Attach category logic
+                    const categorySelect = modalContent.querySelector('#student_category');
+                    const categoryDetailsContainer = modalContent.querySelector('#category_details_container');
+                    const categoryDetailsInput = modalContent.querySelector('#student_category_details');
+                    const categoryDetailsAsterisk = modalContent.querySelector('#category_details_asterisk');
+
+                    function updateCategoryDetails() {
+                        if (!categorySelect || !categoryDetailsContainer || !categoryDetailsInput) return;
+                        
+                        const type = categorySelect.value;
+                        if (type === 'regular_day') {
+                            categoryDetailsContainer.style.display = 'none';
+                            categoryDetailsInput.required = false;
+                        } else if (type === 'regular_boarding') {
+                            categoryDetailsContainer.style.display = 'block';
+                            categoryDetailsInput.required = false;
+                            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.add('hidden');
+                        } else if (type === 'international') {
+                            categoryDetailsContainer.style.display = 'block';
+                            categoryDetailsInput.required = true;
+                            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.remove('hidden');
+                        }
+                    }
+
+                    if (categorySelect) {
+                        categorySelect.addEventListener('change', updateCategoryDetails);
+                        updateCategoryDetails(); // initialize
+                    }
+                } else {
+                    modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
+            });
     }
 });
 </script>

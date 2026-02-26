@@ -66,7 +66,14 @@ A comprehensive, web-based School Management System designed to streamline admin
 
 ## Changelog
 
-### [Current] - 2026-02-23
+### [Current] - 2026-02-26
+- **Finance Module Enhancements**:
+    - **Cash Book Overhaul**: Added dynamic "Totals (Filtered)" row, precisely rebalanced column widths for A4 landscape printing, and integrated a dedicated `@media print` layout that auto-strips UI elements. Added a Credit/Debit "Transaction Type" isolate filter.
+    - **Expense Log Upgrades**: Ported the Cash Book's robust data table layout directly into the main `expenses_list.php` view. Added Title/Code search, Category dropdown, Date range limits, and dynamic server-side pagination to the `Expense.php` model queries.
+    - **Print Layout Compliance**: Standardized all finance tables (Cash Book, Expense Log, Fee Overviews) to strictly enforce 100% bleeding, table line rigidity, and proper column distribution on physical prints.
+    - **Bug Fix**: Resolved an undefined property `db` error inside the `ExpenseController->savePaymentRequest()` workflow ensuring staff expense requests submit correctly.
+
+### [2026-02-23]
 - **Class Information**:
     - **Academic Performance**: Redesigned the "Academic Performance" tab to deeply group historical exam configurations by Academic Year and Term.
     - **Financial Data**: Refactored class financial statistics to accurately track bills, payments, and balances per fee across academic terms, including historical `original_classes` for promoted students.

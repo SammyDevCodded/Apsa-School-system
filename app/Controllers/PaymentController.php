@@ -282,6 +282,14 @@ class PaymentController extends Controller
                         return;
                     }
                     
+                    // CASH BOOK CREDIT AUTOMATION
+                    try {
+                        $cashBook = new \App\Models\CashBook();
+                        $cashBook->recordTransaction('credit', 'fee_payment', $paymentId, $amount, $date);
+                    } catch (\Exception $e) {
+                        error_log("Failed to log fee payment to Cash Book: " . $e->getMessage());
+                    }
+                    
                     $paymentIds[] = $paymentId;
                 }
                 
@@ -405,6 +413,14 @@ class PaymentController extends Controller
         $result = $paymentModel->delete($id);
         
         if ($result) {
+            // Revert cashbook transaction
+            try {
+                $cashBook = new \App\Models\CashBook();
+                $cashBook->removeTransaction('fee_payment', $id);
+            } catch (\Exception $e) {
+                // Log but continue
+            }
+            
             // Log audit trail with academic year and term
             AuditHelper::log(
                 $_SESSION['user']['id'],

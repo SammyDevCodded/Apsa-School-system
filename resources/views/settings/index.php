@@ -451,7 +451,17 @@ $gradingTypes = [
                                 <input type="text" name="student_admission_prefix" id="student_admission_prefix" 
                                     value="<?= htmlspecialchars($settings['student_admission_prefix'] ?? 'EPI') ?>" maxlength="10"
                                     class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                                <p class="text-xs text-gray-500 mt-1">Format: [Prefix][HHMMSS] - Example: EPI-143025</p>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="student_auto_format" class="block text-sm font-medium text-gray-700">Student Admission Format</label>
+                            <div class="mt-1">
+                                <select name="student_auto_format" id="student_auto_format"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <option value="timestamp" <?= (isset($settings['student_auto_format']) && $settings['student_auto_format'] == 'timestamp') ? 'selected' : '' ?>>Timestamp ([Prefix]-[HHMMSS])</option>
+                                    <option value="year_sequence" <?= (isset($settings['student_auto_format']) && $settings['student_auto_format'] == 'year_sequence') ? 'selected' : '' ?>>Year Sequence ([Prefix]-[Year][Count])</option>
+                                </select>
                             </div>
                         </div>
 
@@ -461,7 +471,17 @@ $gradingTypes = [
                                 <input type="text" name="staff_employee_prefix" id="staff_employee_prefix" 
                                     value="<?= htmlspecialchars($settings['staff_employee_prefix'] ?? 'StID') ?>" maxlength="10"
                                     class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                                <p class="text-xs text-gray-500 mt-1">Format: [Prefix][HHMMSS] - Example: StID-123455</p>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="staff_auto_format" class="block text-sm font-medium text-gray-700">Staff ID Format</label>
+                            <div class="mt-1">
+                                <select name="staff_auto_format" id="staff_auto_format"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <option value="timestamp" <?= (isset($settings['staff_auto_format']) && $settings['staff_auto_format'] == 'timestamp') ? 'selected' : '' ?>>Timestamp ([Prefix]-[HHMMSS])</option>
+                                    <option value="year_sequence" <?= (isset($settings['staff_auto_format']) && $settings['staff_auto_format'] == 'year_sequence') ? 'selected' : '' ?>>Year Sequence ([Prefix]-[Year][Count])</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -471,11 +491,21 @@ $gradingTypes = [
                             <div class="mt-2 p-3 bg-gray-50 rounded-md">
                                 <p class="text-sm text-gray-600">
                                     Next Student Admission Number: 
-                                    <span id="admission-preview" class="font-mono"><?= htmlspecialchars($settings['student_admission_prefix'] ?? 'EPI') ?>-<?= date('His') ?></span>
+                                    <?php 
+                                        $studentFormat = $settings['student_auto_format'] ?? 'timestamp';
+                                        $studentPrefix = $settings['student_admission_prefix'] ?? 'EPI';
+                                        $studentPreview = $studentFormat === 'year_sequence' ? $studentPrefix . '-' . date('Y') . '001' : $studentPrefix . '-' . date('His');
+                                    ?>
+                                    <span id="admission-preview" class="font-mono"><?= htmlspecialchars($studentPreview) ?></span>
                                 </p>
                                 <p class="text-sm text-gray-600 mt-1">
                                     Next Staff Employee ID: 
-                                    <span id="employee-preview" class="font-mono"><?= htmlspecialchars($settings['staff_employee_prefix'] ?? 'StID') ?>-<?= date('His') ?></span>
+                                    <?php 
+                                        $staffFormat = $settings['staff_auto_format'] ?? 'timestamp';
+                                        $staffPrefix = $settings['staff_employee_prefix'] ?? 'StID';
+                                        $staffPreview = $staffFormat === 'year_sequence' ? $staffPrefix . '-' . date('Y') . '001' : $staffPrefix . '-' . date('His');
+                                    ?>
+                                    <span id="employee-preview" class="font-mono"><?= htmlspecialchars($staffPreview) ?></span>
                                 </p>
                             </div>
                         </div>
@@ -751,7 +781,9 @@ $gradingTypes = [
                         </dt>
                         <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                             Student Admission Prefix: <?= htmlspecialchars($settings['student_admission_prefix'] ?? 'EPI') ?><br>
-                            Staff Employee Prefix: <?= htmlspecialchars($settings['staff_employee_prefix'] ?? 'StID') ?>
+                            Student Format: <?= htmlspecialchars($settings['student_auto_format'] ?? 'timestamp') ?><br>
+                            Staff Employee Prefix: <?= htmlspecialchars($settings['staff_employee_prefix'] ?? 'StID') ?><br>
+                            Staff Format: <?= htmlspecialchars($settings['staff_auto_format'] ?? 'timestamp') ?>
                         </dd>
                     </div>
                     <?php endif; ?>
@@ -901,6 +933,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Auto-generate preview updates
+    const studentPrefixInput = document.getElementById('student_admission_prefix');
+    const studentFormatSelect = document.getElementById('student_auto_format');
+    const studentPreview = document.getElementById('admission-preview');
+    
+    function updateStudentPreview() {
+        if (!studentPrefixInput || !studentFormatSelect || !studentPreview) return;
+        const prefix = studentPrefixInput.value || 'EPI';
+        const format = studentFormatSelect.value;
+        const now = new Date();
+        if (format === 'year_sequence') {
+            studentPreview.textContent = prefix + '-' + now.getFullYear() + '001';
+        } else {
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            studentPreview.textContent = prefix + '-' + h + m + s;
+        }
+    }
+
+    if (studentPrefixInput) studentPrefixInput.addEventListener('input', updateStudentPreview);
+    if (studentFormatSelect) studentFormatSelect.addEventListener('change', updateStudentPreview);
+
+    const staffPrefixInput = document.getElementById('staff_employee_prefix');
+    const staffFormatSelect = document.getElementById('staff_auto_format');
+    const staffPreview = document.getElementById('employee-preview');
+    
+    function updateStaffPreview() {
+        if (!staffPrefixInput || !staffFormatSelect || !staffPreview) return;
+        const prefix = staffPrefixInput.value || 'StID';
+        const format = staffFormatSelect.value;
+        const now = new Date();
+        if (format === 'year_sequence') {
+            staffPreview.textContent = prefix + '-' + now.getFullYear() + '001';
+        } else {
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            staffPreview.textContent = prefix + '-' + h + m + s;
+        }
+    }
+
+    if (staffPrefixInput) staffPrefixInput.addEventListener('input', updateStaffPreview);
+    if (staffFormatSelect) staffFormatSelect.addEventListener('change', updateStaffPreview);
+
 });
 </script>
 

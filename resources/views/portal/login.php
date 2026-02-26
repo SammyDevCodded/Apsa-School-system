@@ -74,6 +74,17 @@ ob_start();
     </div>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Unconditionally clear lock state for all users when arriving at login
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('system_is_locked')) {
+                localStorage.removeItem(key);
+            }
+        });
+    });
+</script>
+
 <?php 
 $content = ob_get_clean();
 include RESOURCES_PATH . '/layouts/portal.php';

@@ -202,8 +202,18 @@ ob_start();
 
                     <!-- Student Bills Section -->
                     <div class="mt-8">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Student Bills</h3>
-                        <div class="overflow-x-auto">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Student Bills</h3>
+                            <?php if (!empty($studentBills)): ?>
+                            <button id="print-student-bills-btn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Print
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                        <div class="overflow-x-auto" id="student-bills-table-container">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
@@ -225,8 +235,15 @@ ob_start();
                                             </td>
                                         </tr>
                                     <?php else: ?>
-                                        <?php foreach ($studentBills as $bill): 
+                                        <?php 
+                                            $totalAmount = 0;
+                                            $totalPaid = 0;
+                                            $totalBalance = 0;
+                                            foreach ($studentBills as $bill): 
                                             $balance = $bill['fee_amount'] - $bill['total_paid'];
+                                            $totalAmount += $bill['fee_amount'];
+                                            $totalPaid += $bill['total_paid'];
+                                            $totalBalance += $balance;
                                             ?>
                                             <tr>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -258,6 +275,16 @@ ob_start();
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </tbody>
+                                <?php if (!empty($studentBills)): ?>
+                                <tfoot class="bg-gray-50">
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-3 text-sm font-medium text-gray-900" style="text-align: right;">Total</td>
+                                        <td class="px-6 py-3 text-sm font-bold text-gray-900">₵<?= number_format($totalAmount, 2) ?></td>
+                                        <td class="px-6 py-3 text-sm font-bold text-gray-900">₵<?= number_format($totalPaid, 2) ?></td>
+                                        <td class="px-6 py-3 text-sm font-bold <?= $totalBalance > 0 ? 'text-red-600' : 'text-green-600' ?>">₵<?= number_format($totalBalance, 2) ?></td>
+                                    </tr>
+                                </tfoot>
+                                <?php endif; ?>
                             </table>
                         </div>
                         
@@ -1275,15 +1302,25 @@ document.getElementById('print-report-btn').addEventListener('click', function()
     
     const headerHtml = this.getAttribute('data-header-html') || '';
     const title = this.getAttribute('data-title') || 'Transaction Details';
+    const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+    const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
     
     // Create print window
     const printWindow = window.open('', '_blank');
+    
+    const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="school-logo">` : '';
+    
     printWindow.document.write(`
         <html>
             <head>
                 <title>${title}</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
+                    .report-title { font-size: 18px; margin: 10px 0; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+                    .header-info { margin-bottom: 20px; text-align: center; }
                     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                     th { background-color: #f2f2f2; }
@@ -1291,7 +1328,12 @@ document.getElementById('print-report-btn').addEventListener('click', function()
                 </style>
             </head>
             <body>
-                <h2>${title}</h2>
+                <div class="header">
+                    ${logoHtml}
+                    <h1 class="school-name">${schoolName}</h1>
+                    <div class="report-title">${title}</div>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
+                </div>
                 <div class="header-info">${headerHtml}</div>
                 <table>
                     <thead>
@@ -1342,7 +1384,7 @@ document.getElementById('print-report-btn').addEventListener('click', function()
                         <tr>
                             <td colspan="2"><strong>Total</strong></td>
                             <td><strong>₵${totalAmount.toFixed(2)}</strong></td>
-                            <td colspan="3"></td>
+                            <td colspan="4"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -1388,16 +1430,26 @@ document.addEventListener('click', function(e) {
                 const academicYear = data.academic_year || 'N/A';
                 const term = data.term || 'N/A';
                 
+                const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+                const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+                const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="h-12 w-auto object-contain">` : '';
+
                 let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">${feeName}</h3>
-                            <p class="text-sm text-gray-500">Type: <span class="font-medium text-gray-900">${feeType.replace('_', ' ').toUpperCase()}</span></p>
-                            <p class="text-sm text-gray-500">Academic Year: <span class="font-medium text-gray-900">${academicYear}</span></p>
-                            <p class="text-sm text-gray-500">Term: <span class="font-medium text-gray-900">${term}</span></p>
-                            <p class="text-sm text-gray-500">Assigned to: <span class="font-medium text-gray-900">${assignedClasses}</span></p>
+                    <div class="flex justify-between items-start mb-4 border-b pb-4">
+                        <div class="flex items-center space-x-4">
+                            ${logoHtml}
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">${schoolName}</h2>
+                                <h3 class="text-md font-medium text-gray-600">${feeName}</h3>
+                                <div class="mt-2 text-sm text-gray-500">
+                                    <p>Type: <span class="font-medium text-gray-900">${feeType.replace('_', ' ').toUpperCase()}</span></p>
+                                    <p>Academic Year: <span class="font-medium text-gray-900">${academicYear}</span></p>
+                                    <p>Term: <span class="font-medium text-gray-900">${term}</span></p>
+                                    <p>Assigned to: <span class="font-medium text-gray-900">${assignedClasses}</span></p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex space-x-2">
+                        <div class="flex space-x-2 mt-1">
                             <button type="button" id="print-fee-details-btn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1475,15 +1527,23 @@ document.addEventListener('click', function(e) {
                     printBtn.addEventListener('click', function() {
                         const printWindow = window.open('', '_blank');
                         const tableHtml = document.querySelector('#fee-details-table-container table').outerHTML;
-                        // Clone table
+                        
+                        const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+                        const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+                        const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="school-logo">` : '';
+                        
                         printWindow.document.write(`
                             <html>
                                 <head>
                                     <title>${feeName} - Details</title>
                                     <style>
                                         body { font-family: Arial, sans-serif; margin: 20px; }
-                                        h2 { margin-bottom: 5px; }
-                                        p { margin-top: 0; color: #666; }
+                                        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+                                        .school-logo { max-height: 80px; margin-bottom: 10px; }
+                                        .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
+                                        .report-title { font-size: 18px; margin: 10px 0; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+                                        .header-info { text-align: center; margin-bottom: 20px; }
+                                        .header-info p { margin: 5px 0; color: #666; }
                                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                                         th { background-color: #f2f2f2; }
@@ -1491,11 +1551,18 @@ document.addEventListener('click', function(e) {
                                     </style>
                                 </head>
                                 <body>
-                                    <h2>${feeName}</h2>
-                                    <p>Type: ${feeType.replace('_', ' ').toUpperCase()}</p>
-                                    <p>Academic Year: ${academicYear}</p>
-                                    <p>Term: ${term}</p>
-                                    <p>Assigned to: ${assignedClasses}</p>
+                                    <div class="header">
+                                        ${logoHtml}
+                                        <h1 class="school-name">${schoolName}</h1>
+                                        <div class="report-title">${feeName}</div>
+                                        <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
+                                    </div>
+                                    <div class="header-info">
+                                        <p>Type: ${feeType.replace('_', ' ').toUpperCase()}</p>
+                                        <p>Academic Year: ${academicYear}</p>
+                                        <p>Term: ${term}</p>
+                                        <p>Assigned to: ${assignedClasses}</p>
+                                    </div>
                                     ${tableHtml}
                                     <script>window.onload = function() { window.print(); }<\/script>
                                 </body>
@@ -2053,9 +2120,17 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="view-payment-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Payment Details</h3>
-                <div class="flex items-center space-x-2">
+            <div class="flex justify-between items-start mb-4 border-b pb-4">
+                <div class="flex items-center space-x-4">
+                    <?php if (!empty($settings['school_logo'])): ?>
+                        <img src="<?= htmlspecialchars($settings['school_logo']) ?>" alt="School Logo" class="h-12 w-auto object-contain">
+                    <?php endif; ?>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($settings['school_name'] ?? 'School Management System') ?></h2>
+                        <h3 class="text-md font-medium text-gray-600">Receipt</h3>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 mt-1">
                     <button id="print-view-payment-btn" class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <svg class="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -2234,6 +2309,68 @@ function generateMethodDetails(payment) {
         `;
     }
     return '';
+}
+// Handle print student bills
+const printStudentBillsBtn = document.getElementById('print-student-bills-btn');
+if (printStudentBillsBtn) {
+    printStudentBillsBtn.addEventListener('click', function() {
+        const tableContainer = document.getElementById('student-bills-table-container');
+        if (!tableContainer) return;
+
+        const table = tableContainer.querySelector('table');
+        if (!table) {
+            alert('No data to print');
+            return;
+        }
+
+        const clonedTable = table.cloneNode(true);
+        const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+        const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+        const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="school-logo">` : '';
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Student Bills Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+                        .school-logo { max-height: 80px; margin-bottom: 10px; }
+                        .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
+                        .report-title { font-size: 18px; margin: 10px 0; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        tfoot td { font-weight: bold; background-color: #f9fafb; font-size: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoHtml}
+                        <h1 class="school-name">${schoolName}</h1>
+                        <div class="report-title">Student Bills Report</div>
+                        <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
+                    </div>
+        `);
+        
+        // Add the table structure
+        printWindow.document.write('<div>');
+        printWindow.document.body.appendChild(clonedTable);
+        printWindow.document.write('</div>');
+        
+        printWindow.document.write(`
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    <\/script>
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+    });
 }
 </script>
 

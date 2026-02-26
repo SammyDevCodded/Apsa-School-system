@@ -9,6 +9,7 @@ class Database
     private $password;
     private $charset;
     private $pdo;
+    private static $instance = null;
 
     public function __construct()
     {
@@ -69,5 +70,42 @@ class Database
     {
         $stmt = $this->query($sql, $params);
         return $stmt->fetch();
+    }
+
+    public static function getInstance()
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public function insert($table, $data)
+    {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ':' . implode(', :', array_keys($data));
+        
+        $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$placeholders})";
+        $this->execute($sql, $data);
+        
+        return $this->pdo->lastInsertId();
+    }
+
+    public function update($table, $data, $whereCondition)
+    {
+        $set = '';
+        foreach ($data as $key => $value) {
+            $set .= "{$key} = :{$key}, ";
+        }
+        $set = rtrim($set, ', ');
+        
+        $sql = "UPDATE {$table} SET {$set} WHERE {$whereCondition}";
+        return $this->execute($sql, $data);
+    }
+
+    public function delete($table, $whereCondition)
+    {
+        $sql = "DELETE FROM {$table} WHERE {$whereCondition}";
+        return $this->execute($sql);
     }
 }

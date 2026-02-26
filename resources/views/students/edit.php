@@ -37,6 +37,7 @@ ob_start();
                                     Generate
                                 </button>
                             </div>
+                            <p id="admission_format_hint" class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($formatDescription ?? 'Format: [Prefix]-[HHMMSS]') ?></p>
                         </div>
 
                         <div>
@@ -77,13 +78,13 @@ ob_start();
 
                         <div>
                             <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth</label>
-                            <input type="date" name="dob" id="dob" value="<?= htmlspecialchars($student['dob'] ?? '') ?>"
+                            <input type="date" name="dob" id="dob" value="<?= htmlspecialchars($student['dob'] ?? '') ?>" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         </div>
 
                         <div>
                             <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
-                            <select name="gender" id="gender"
+                            <select name="gender" id="gender" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                 <option value="">Select Gender</option>
                                 <option value="male" <?= (isset($student['gender']) && $student['gender'] == 'male') ? 'selected' : '' ?>>Male</option>
@@ -94,7 +95,7 @@ ob_start();
 
                         <div>
                             <label for="class_id" class="block text-sm font-medium text-gray-700">Class</label>
-                            <select name="class_id" id="class_id"
+                            <select name="class_id" id="class_id" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                 <option value="">Select Class</option>
                                 <?php foreach ($classes ?? [] as $class): ?>
@@ -113,7 +114,7 @@ ob_start();
 
                         <div>
                             <label for="guardian_phone" class="block text-sm font-medium text-gray-700">Guardian Phone</label>
-                            <input type="text" name="guardian_phone" id="guardian_phone" value="<?= htmlspecialchars($student['guardian_phone'] ?? '') ?>"
+                            <input type="text" name="guardian_phone" id="guardian_phone" value="<?= htmlspecialchars($student['guardian_phone'] ?? '') ?>" required
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         </div>
 
@@ -139,8 +140,8 @@ ob_start();
                             </select>
                         </div>
 
-                        <div>
-                            <label for="student_category_details" class="block text-sm font-medium text-gray-700">Category Details</label>
+                        <div id="category_details_container" style="display: none;">
+                            <label for="student_category_details" class="block text-sm font-medium text-gray-700">Category Details <span id="category_details_asterisk" class="text-red-500 hidden">*</span></label>
                             <textarea name="student_category_details" id="student_category_details" rows="3"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 placeholder="Additional details about the student's category (e.g., country for international students, dormitory for boarding students)"><?= htmlspecialchars($student['student_category_details'] ?? '') ?></textarea>
@@ -196,6 +197,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     admissionInput.value = prefix + '-' + timestamp;
                 });
         });
+    }
+
+    // Handle student category changes
+    const categorySelect = document.getElementById('student_category');
+    const categoryDetailsContainer = document.getElementById('category_details_container');
+    const categoryDetailsInput = document.getElementById('student_category_details');
+    const categoryDetailsAsterisk = document.getElementById('category_details_asterisk');
+
+    function updateCategoryDetails() {
+        if (!categorySelect || !categoryDetailsContainer || !categoryDetailsInput) return;
+        
+        const type = categorySelect.value;
+        if (type === 'regular_day') {
+            categoryDetailsContainer.style.display = 'none';
+            categoryDetailsInput.required = false;
+        } else if (type === 'regular_boarding') {
+            categoryDetailsContainer.style.display = 'block';
+            categoryDetailsInput.required = false;
+            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.add('hidden');
+        } else if (type === 'international') {
+            categoryDetailsContainer.style.display = 'block';
+            categoryDetailsInput.required = true;
+            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.remove('hidden');
+        }
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', updateCategoryDetails);
+        // initialize on load
+        updateCategoryDetails();
     }
 });
 </script>
