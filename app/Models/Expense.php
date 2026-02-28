@@ -108,6 +108,22 @@ class Expense {
         ];
     }
     
+    /**
+     * Get monthly approved expenses report data for Dashboard
+     */
+    public function getMonthlyReport($months = 6) {
+        $sql = "SELECT DATE_FORMAT(expense_date, '%Y-%m') as month, 
+                       DATE_FORMAT(expense_date, '%M %Y') as month_name,
+                       SUM(amount) as total_amount
+                FROM expenses 
+                WHERE status = 'approved'
+                GROUP BY DATE_FORMAT(expense_date, '%Y-%m') 
+                ORDER BY DATE_FORMAT(expense_date, '%Y-%m') DESC 
+                LIMIT ?";
+                
+        return $this->db->fetchAll($sql, [$months]);
+    }
+    
     public function generateExpenseCode() {
         $prefix = 'EXP';
         $yearMonth = date('Ym');

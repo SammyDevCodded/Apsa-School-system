@@ -52,6 +52,12 @@ ob_start();
     <div class="px-4 py-6 sm:px-0">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-semibold text-gray-900">Finance Records</h1>
+            <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Back to Dashboard
+            </a>
         </div>
 
         <!-- Tabs -->
@@ -1708,6 +1714,10 @@ function printSummaryOnlyFunction() {
         return;
     }
 
+    const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+    const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+    const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="school-logo">` : '';
+
     // Clone the table to avoid modifying the original
     const clonedTable = reportTable.cloneNode(true);
 
@@ -1718,18 +1728,23 @@ function printSummaryOnlyFunction() {
             <head>
                 <title>Finance Report Summary</title>
                 <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
                     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                     th { background-color: #f2f2f2; }
-                    .header { margin-bottom: 20px; }
-                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; }
+                    .header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; margin-top: 5px; }
                     .actions-column { display: none; }
                 </style>
             </head>
             <body>
                 <div class="header">
+                    ${logoHtml}
+                    <h1 class="school-name">${schoolName}</h1>
                     <h2>${reportTitle}</h2>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
                     <div class="total">${reportTotal}</div>
                 </div>
     `);
@@ -1767,6 +1782,10 @@ function printSummaryAndFeesFunction() {
         return;
     }
 
+    const schoolName = '<?= addslashes($settings['school_name'] ?? 'School Management System') ?>';
+    const schoolLogo = '<?= $settings['school_logo'] ?? '' ?>';
+    const logoHtml = schoolLogo ? `<img src="${schoolLogo}" alt="School Logo" class="school-logo">` : '';
+
     // Clone the tables to avoid modifying the original
     const clonedReportTable = reportTable.cloneNode(true);
     const clonedFeesTable = feesTable ? feesTable.cloneNode(true) : null;
@@ -1778,19 +1797,24 @@ function printSummaryAndFeesFunction() {
             <head>
                 <title>Finance Report Summary and Fees Data</title>
                 <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .school-name { font-size: 24px; font-weight: bold; margin: 0 0 5px 0; color: #333; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                     th { background-color: #f2f2f2; }
-                    .header { margin-bottom: 20px; }
-                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; }
-                    .section { margin-top: 40px; }
+                    .header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+                    .total { font-weight: bold; font-size: 1.2em; color: #4f46e5; margin-top: 5px; }
+                    .section { margin-top: 40px; text-align: left; }
                     .actions-column { display: none; }
                 </style>
             </head>
             <body>
                 <div class="header">
+                    ${logoHtml}
+                    <h1 class="school-name">${schoolName}</h1>
                     <h2>${reportTitle}</h2>
+                    <p style="color: #666; font-size: 14px; margin-top: 5px;">Printed on: ${new Date().toLocaleString()}</p>
                     <div class="total">${reportTotal}</div>
                 </div>
     `);

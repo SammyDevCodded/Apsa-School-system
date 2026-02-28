@@ -162,7 +162,7 @@ ob_start();
                     <svg class="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                     </svg>
-                    Revenue Overview (Last 6 Months)
+                    Revenue vs Expenditure (Last 6 Months)
                 </h3>
                 <div class="relative h-64 w-full">
                     <canvas id="financeChart"></canvas>
@@ -180,6 +180,14 @@ ob_start();
                 <div class="relative h-64 w-full flex justify-center">
                     <canvas id="genderChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        <!-- Cash Book Flow Chart -->
+        <div class="glass-morphism rounded-xl p-6 mb-8 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Cash Book Flow (Credit vs Debit)</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="cashbookChart"></canvas>
             </div>
         </div>
 
@@ -273,35 +281,72 @@ ob_start();
         // Common Options
         Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
         Chart.defaults.color = '#4B5563';
-        
-        // 1. Finance Chart (Line/Area)
+        // 1. Finance Chart (Revenue vs Expenditure)
         const financeCtx = document.getElementById('financeChart').getContext('2d');
-        const monthlyRevenue = <?= json_encode(array_reverse($monthlyRevenue ?? [])) ?>;
+        const rawRevenue = <?= json_encode(array_reverse($monthlyRevenue ?? [])) ?>;
+        const rawExpenses = <?= json_encode(array_reverse($monthlyExpenses ?? [])) ?>;
         const currencySymbol = "<?= $currency['symbol'] ?? '$' ?>";
+        
+        // Merge labels dynamically to ensure timelines align even if there are gaps
+        let allLabels = new Set();
+        rawRevenue.forEach(item => allLabels.add(item.month_name));
+        rawExpenses.forEach(item => allLabels.add(item.month_name));
+        const mergedLabels = Array.from(allLabels).sort((a, b) => {
+            // Sort chronologically using underlying month keys if necessary, or just rely on raw order
+            return new Date(a) - new Date(b); 
+        });
+
+        const alignedRevenue = mergedLabels.map(label => {
+            const found = rawRevenue.find(r => r.month_name === label);
+            return found ? parseFloat(found.total_amount) : 0;
+        });
+
+        const alignedExpenses = mergedLabels.map(label => {
+            const found = rawExpenses.find(e => e.month_name === label);
+            return found ? parseFloat(found.total_amount) : 0;
+        });
         
         new Chart(financeCtx, {
             type: 'line',
             data: {
-                labels: monthlyRevenue.map(item => item.month_name),
-                datasets: [{
-                    label: 'Revenue',
-                    data: monthlyRevenue.map(item => item.total_amount),
-                    borderColor: '#6366F1', // Indigo 500
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#6366F1',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
+                labels: mergedLabels,
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: alignedRevenue,
+                        borderColor: '#6366F1', // Indigo 500
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#6366F1',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Expenditure',
+                        data: alignedExpenses,
+                        borderColor: '#EF4444', // Red 500
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#EF4444',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: { 
+                        display: true,
+                        position: 'top'
+                    },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
@@ -396,6 +441,67 @@ ob_start();
                     y: {
                         beginAtZero: true,
                         grid: { borderDash: [2, 2], drawBorder: false }
+                    },
+                    x: {
+                        grid: { display: false, drawBorder: false }
+                    }
+                }
+            }
+        });
+
+        // 4. Cash Book Flow Chart (Bar)
+        const cashbookCtx = document.getElementById('cashbookChart').getContext('2d');
+        const cashbookFlow = <?= json_encode(array_reverse($cashbookFlow ?? [])) ?>;
+        
+        new Chart(cashbookCtx, {
+            type: 'bar',
+            data: {
+                labels: cashbookFlow.map(c => c.month_name),
+                datasets: [
+                    {
+                        label: 'Credit (Inflow)',
+                        data: cashbookFlow.map(c => c.total_credit),
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)', // Green 500
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Debit (Outflow)',
+                        data: cashbookFlow.map(c => c.total_debit),
+                        backgroundColor: 'rgba(245, 158, 11, 0.8)', // Amber 500
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        display: true,
+                        position: 'top' 
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += currencySymbol + new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 2], drawBorder: false },
+                        ticks: { callback: function(value) { return currencySymbol + value; } }
                     },
                     x: {
                         grid: { display: false, drawBorder: false }

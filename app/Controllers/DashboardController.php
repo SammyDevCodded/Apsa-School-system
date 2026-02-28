@@ -52,6 +52,12 @@ class DashboardController extends Controller
         $paymentModel = new \App\Models\Payment();
         $monthlyRevenue = $paymentModel->getMonthlyReport([], '', 1, 6); // Last 6 months
         
+        $expenseModel = new \App\Models\Expense();
+        $monthlyExpenses = $expenseModel->getMonthlyReport(6);
+        
+        $cashBookModel = new \App\Models\CashBook();
+        $cashbookFlow = $cashBookModel->getMonthlyFlow(6);
+        
         $settingModel = new \App\Models\Setting();
         $currency = $settingModel->getCurrency();
         
@@ -84,6 +90,8 @@ class DashboardController extends Controller
             'studentStats' => $studentStats,
             'studentsByClass' => $studentsByClass,
             'monthlyRevenue' => $monthlyRevenue,
+            'monthlyExpenses' => $monthlyExpenses,
+            'cashbookFlow' => $cashbookFlow,
             'currency' => $currency,
             'daysRemaining' => $daysRemaining,
             'currentAcademicYear' => $currentAcademicYear,

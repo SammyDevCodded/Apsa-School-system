@@ -7,3 +7,9 @@
 .DS_Store
 Thumbs.db
 *.log
+debug_exams_log.txt
+test_*.php
+check_*.php
+debug_*.php
+*.bak
+*.tmp

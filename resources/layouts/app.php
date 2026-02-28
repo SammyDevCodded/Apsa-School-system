@@ -1066,8 +1066,18 @@
         // Only output if user is logged in
         if (isset($_SESSION['user'])):
         ?>
+        <style>
+            @keyframes unlockSuccess {
+                0% { transform: scale(1) translateY(0); opacity: 1; }
+                40% { transform: scale(1.02) translateY(5px); opacity: 1; }
+                100% { transform: scale(0.95) translateY(-20px); opacity: 0; }
+            }
+            .animate-unlock-success {
+                animation: unlockSuccess 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+        </style>
         <div id="idle-timeout-overlay" class="fixed inset-0 z-[9999] hidden glass-morphism flex items-center justify-center transition-opacity duration-300" style="z-index: 9999;">
-            <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all">
+            <div id="unlock-modal-inner" class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all">
                 <div class="text-center mb-6">
                     <svg class="mx-auto h-12 w-12 text-indigo-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -1232,12 +1242,22 @@
                         const result = await response.json();
                         
                         if (result.success) {
-                            // Unlock success
-                            localStorage.removeItem(LOCK_KEY);
-                            window.SYSTEM_IS_LOCKED = false;
-                            overlay.classList.add('hidden');
-                            document.body.style.overflow = '';
-                            lastActivity = Date.now();
+                            // Run the success CSS animation
+                            const innerModal = document.getElementById('unlock-modal-inner');
+                            innerModal.classList.add('animate-unlock-success');
+                            
+                            // Let the animation play before hiding the DOM
+                            setTimeout(() => {
+                                localStorage.removeItem(LOCK_KEY);
+                                window.SYSTEM_IS_LOCKED = false;
+                                overlay.classList.add('hidden');
+                                document.body.style.overflow = '';
+                                lastActivity = Date.now();
+                                
+                                // Reset the modal for next time
+                                innerModal.classList.remove('animate-unlock-success');
+                                passwordInput.value = '';
+                            }, 450); // Matches the 0.5s animation curve sweet spot
                         } else {
                             errorDiv.textContent = result.message || 'Invalid password';
                             errorDiv.classList.remove('hidden');

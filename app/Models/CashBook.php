@@ -136,6 +136,22 @@ class CashBook {
         ];
     }
     
+    /**
+     * Get monthly summarized cash flow for Dashboard analytics
+     */
+    public function getMonthlyFlow($months = 6) {
+        $sql = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') as month, 
+                       DATE_FORMAT(transaction_date, '%M %Y') as month_name,
+                       SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE 0 END) as total_credit,
+                       SUM(CASE WHEN transaction_type = 'debit' THEN amount ELSE 0 END) as total_debit
+                FROM cash_book 
+                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m') 
+                ORDER BY DATE_FORMAT(transaction_date, '%Y-%m') DESC 
+                LIMIT ?";
+                
+        return $this->db->fetchAll($sql, [$months]);
+    }
+    
     public function getCurrentBalance() {
         $latest = $this->db->fetchOne("SELECT balance_after FROM cash_book ORDER BY id DESC LIMIT 1");
         return $latest['balance_after'] ?? 0.00;
