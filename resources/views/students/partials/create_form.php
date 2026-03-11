@@ -112,13 +112,21 @@
         <p class="text-xs text-gray-500 mt-1">Include details about allergies, chronic conditions, medications, or any special medical needs.</p>
     </div>
 
-    <div class="flex justify-end">
+    <div class="flex justify-end flex-wrap gap-2">
         <button type="button" id="closeAddStudentModal" class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
             Cancel
         </button>
-        <button type="submit"
-            class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <button type="submit" id="saveStudentBtn"
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             Save Student
+        </button>
+        <button type="button" id="proceedToBillingBtn"
+            style="display:none;"
+            class="inline-flex items-center justify-center py-2 px-4 border-2 border-green-700 shadow-sm text-sm font-semibold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            Proceed to Billing
         </button>
     </div>
 </form>

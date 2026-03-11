@@ -373,7 +373,9 @@ class Student extends Model
     public function getFinancialRecords($studentId)
     {
         // Get all fees assigned to this student through fee_assignments table
-        $sql = "SELECT f.*, c.name as class_name
+        $sql = "SELECT f.*, c.name as class_name,
+                       fa.custom_amount, fa.billing_description,
+                       COALESCE(fa.custom_amount, f.amount) as effective_amount
                 FROM fees f
                 LEFT JOIN classes c ON f.class_id = c.id
                 INNER JOIN fee_assignments fa ON f.id = fa.fee_id
@@ -391,7 +393,7 @@ class Student extends Model
         
         $payments = $this->db->fetchAll($sql, ['student_id' => $studentId]);
         
-        // Calculate payment status for each fee
+        // Calculate payment status for each fee using effective_amount (custom or standard)
         foreach ($fees as &$fee) {
             $paidAmount = 0;
             foreach ($payments as $payment) {
@@ -399,9 +401,12 @@ class Student extends Model
                     $paidAmount += $payment['amount'];
                 }
             }
+            $effectiveAmount = floatval($fee['effective_amount']);
             $fee['paid_amount'] = $paidAmount;
-            $fee['balance'] = $fee['amount'] - $paidAmount;
-            $fee['status'] = $paidAmount >= $fee['amount'] ? 'fully_paid' : ($paidAmount > 0 ? 'partly_paid' : 'pending');
+            // Keep original amount for reference, use effective_amount for balance/status
+            $fee['amount'] = $effectiveAmount;
+            $fee['balance'] = $effectiveAmount - $paidAmount;
+            $fee['status'] = $paidAmount >= $effectiveAmount ? 'fully_paid' : ($paidAmount > 0 ? 'partly_paid' : 'pending');
         }
         
         // Group payments by academic year and term

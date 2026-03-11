@@ -24,6 +24,7 @@ $router->put('/students/([0-9]+)', 'StudentController@update', ['auth']);
 $router->get('/students/([0-9]+)', 'StudentController@show', ['auth']);
 $router->get('/students/([0-9]+)/delete', 'StudentController@delete', ['auth']);
 $router->get('/students/all-with-fees', 'StudentController@getAllWithFees', ['auth']); // Add this line for getting all students with fees
+$router->post('/students/set-custom-billing', 'StudentController@setCustomBilling', ['auth']); // Custom billing for partial-fee students
 
 // Staff routes (require authentication)
 $router->get('/staff', 'StaffController@index', ['auth']);
@@ -71,6 +72,28 @@ $router->post('/finance/expenses/delete', 'ExpenseController@deleteExpense', ['a
 $router->post('/finance/expenses/request', 'ExpenseController@savePaymentRequest', ['auth']);
 $router->post('/finance/expenses/request/status', 'ExpenseController@updatePaymentRequestStatus', ['auth']);
 $router->post('/finance/expenses/request/delete', 'ExpenseController@deletePaymentRequest', ['auth']);
+
+// Recurring Fee routes (require authentication)
+$router->get('/finance/recurring-fees', 'RecurringFeeController@index', ['auth']);
+$router->post('/finance/recurring-fees', 'RecurringFeeController@store', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)', 'RecurringFeeController@show', ['auth']);
+$router->put('/finance/recurring-fees/([0-9]+)', 'RecurringFeeController@update', ['auth']);
+$router->post('/finance/recurring-fees/([0-9]+)/enroll', 'RecurringFeeController@enroll', ['auth']);
+$router->post('/finance/recurring-fees/([0-9]+)/generate', 'RecurringFeeController@generateBills', ['auth']);
+$router->post('/finance/recurring-fees/([0-9]+)/toggle', 'RecurringFeeController@toggle', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)/entries', 'RecurringFeeController@getEntries', ['auth']);
+$router->get('/finance/recurring-fees/students/search', 'RecurringFeeController@searchStudents', ['auth']);
+$router->get('/finance/recurring-fees/student-fees', 'RecurringFeeController@getStudentRecurringFees', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)/student-bills', 'RecurringFeeController@getStudentBills', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)/enrolled-students-pay', 'RecurringFeeController@getEnrolledStudentsForPay', ['auth']);
+$router->post('/finance/recurring-fees/([0-9]+)/pay', 'RecurringFeeController@recordPayment', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)/payments', 'RecurringFeeController@getPaymentHistory', ['auth']);
+$router->get('/finance/recurring-fees/([0-9]+)/ledger', 'RecurringFeeController@getLedger', ['auth']);
+$router->post('/finance/recurring-fees/waive', 'RecurringFeeController@waiveEntry', ['auth']);
+$router->post('/finance/recurring-fees/unwaive', 'RecurringFeeController@unwaiveEntry', ['auth']);
+
+
+
 
 // Payment routes (require authentication)
 $router->get('/payments', 'PaymentController@index', ['auth']);

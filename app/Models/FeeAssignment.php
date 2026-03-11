@@ -10,7 +10,9 @@ class FeeAssignment extends Model
         'fee_id',
         'student_id',
         'assigned_date',
-        'status'
+        'status',
+        'custom_amount',
+        'billing_description'
     ];
 
     public function __construct()
@@ -95,6 +97,28 @@ class FeeAssignment extends Model
         }
         
         return $assignedCount;
+    }
+
+    /**
+     * Get a specific fee assignment for a student+fee pair
+     */
+    public function getByStudentAndFee($studentId, $feeId)
+    {
+        $sql = "SELECT * FROM {$this->table} WHERE student_id = :student_id AND fee_id = :fee_id LIMIT 1";
+        return $this->db->fetchOne($sql, ['student_id' => $studentId, 'fee_id' => $feeId]);
+    }
+
+    /**
+     * Update custom billing amount and description for a fee assignment
+     */
+    public function updateCustomBilling($assignmentId, $customAmount, $description)
+    {
+        $sql = "UPDATE {$this->table} SET custom_amount = :custom_amount, billing_description = :billing_description WHERE id = :id";
+        return $this->db->execute($sql, [
+            'custom_amount' => $customAmount,
+            'billing_description' => $description,
+            'id' => $assignmentId
+        ]);
     }
 
     /**
@@ -239,7 +263,9 @@ class FeeAssignment extends Model
         // Main Query
         $sql = "SELECT fa.*, 
                        s.first_name, s.last_name, s.admission_no, c.name as class_name,
-                       f.name as fee_name, f.amount as fee_amount, f.type as fee_type,
+                       f.name as fee_name, f.type as fee_type,
+                       COALESCE(fa.custom_amount, f.amount) as fee_amount,
+                       f.amount as original_fee_amount,
                        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.student_id = fa.student_id AND p.fee_id = fa.fee_id) as total_paid
                 FROM {$this->table} fa
                 JOIN students s ON fa.student_id = s.id

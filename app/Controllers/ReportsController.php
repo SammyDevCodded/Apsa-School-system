@@ -178,6 +178,14 @@ class ReportsController extends Controller
             }
         }
         
+        // Get details for the selected academic year to use dates for filtering Expense & CashBook
+        $ayDetails = null;
+        if ($academicYearId) {
+            $ayDetails = $academicYearModel->find($academicYearId);
+        }
+        $startDate = $ayDetails['start_date'] ?? date('Y-01-01');
+        $endDate = $ayDetails['end_date'] ?? date('Y-12-31');
+
         $paymentModel = new Payment();
         // Fetch ALL payments (or better, fetch filtered by academic year directly if model supports it)
         // Since getAll() fetches everything, we should filter in the loop or use a custom query.
@@ -217,6 +225,23 @@ class ReportsController extends Controller
         
         // Sort months chronologically
         ksort($monthlyPayments);
+
+        // Fetch Expense and Cashbook Data
+        $dateFilters = [
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ];
+
+        $expenseModel = new \App\Models\Expense();
+        $expenses = $expenseModel->getAllWithDetails($dateFilters, '', 10000, 0);
+        $totalExpenses = 0;
+        foreach ($expenses as $exp) {
+            $totalExpenses += $exp['amount'];
+        }
+
+        $cashBookModel = new \App\Models\CashBook();
+        $cashBookLedger = $cashBookModel->getLedgerWithDetails($dateFilters, '', 10000, 0);
+        $cashBookTotals = $cashBookModel->getLedgerTotals($dateFilters);
         
         // Get settings for branding
         $settingModel = new Setting();
@@ -228,7 +253,13 @@ class ReportsController extends Controller
             'totalAmount' => $totalAmount,
             'selectedAcademicYearId' => $academicYearId,
             'academicYears' => $academicYears,
-            'settings' => $settings
+            'settings' => $settings,
+            'expenses' => $expenses,
+            'totalExpenses' => $totalExpenses,
+            'cashBookLedger' => $cashBookLedger,
+            'cashBookTotals' => $cashBookTotals,
+            'startDate' => $startDate,
+            'endDate' => $endDate
         ]);
     }
     

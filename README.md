@@ -16,9 +16,10 @@ A comprehensive, web-based School Management System designed to streamline admin
 - **Staff Management**: Manage teaching and non-teaching staff records.
 
 ### 💰 Finance Module
-- **Fee Management**: Create fee structures and track student payments.
-- **Billing**: Generate bills and manage financial records.
-- **Reporting**: Financial summaries and payment tracking.
+- **Fee Management**: Create standard fee structures and track student payments.
+- **Recurring Fees**: Manage subscription-like fees with automated billing cycles and comprehensive historical ledgers.
+- **Billing**: Generate standard bills, set up custom partial student billing, and manage financial records.
+- **Reporting**: Detailed financial summaries tracking income, expenses, and cash book overviews.
 
 ### 📊 Reporting & Analytics
 - **Report Cards**: Automated generation of student report cards with ranking and remarks.
@@ -65,6 +66,22 @@ A comprehensive, web-based School Management System designed to streamline admin
 ```
 
 ## Changelog
+### [Current] - 2026-03-11
+- **Recurring Fees Module**:
+    - **Management System**: Completely new system for managing recurring subscription-like fees, handling enrollment, automated bill generation, and waivers.
+    - **Historical Ledger**: Brought a deeply detailed historical ledger modal to the Pay tab, displaying generated bills, corrections, payments, running balances, and print capabilities.
+- **Student Information**:
+    - **Custom Billing**: Added an interface during student creation/editing to set custom partial billing on specific fee categories.
+- **Financial Reports Fix**:
+    - **System Stability**: Fixed "Undefined property db" error during financial report generation ensuring reliable access to cash book and expense data.
+
+### [2.0.0] - 2026-03-08
+- **Settings Enhancements**:
+    - **UI Revamp**: Upgraded the settings page layout from a collapsible style to a more intuitive, tabbed side-panel interface.
+- **Financial Reports Upgrades**:
+    - **Navigation**: Added a robust "Back to General Reports" button for smoother workflow.
+    - **Comprehensive Data**: Integrated Expense and Cash Book modules directly into the Financial Reports page for a unified, data-driven financial overview.
+
 
 ### [Current] - 2026-02-26
 - **Finance Module Enhancements**:

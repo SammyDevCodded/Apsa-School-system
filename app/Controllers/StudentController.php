@@ -997,6 +997,106 @@ class StudentController extends Controller
         ]);
     }
     
+    /**
+     * Set custom billing amounts for a newly added student
+     * AJAX endpoint: POST /students/set-custom-billing
+     */
+    public function setCustomBilling()
+    {
+        // Check if user is logged in
+        if (!isset($_SESSION['user'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Unauthorized'], 401);
+            return;
+        }
+        
+        if ($this->requestMethod() !== 'POST') {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid request method'], 405);
+            return;
+        }
+        
+        $studentId = $this->post('student_id');
+        $description = $this->post('description', '');
+        $feeAmounts = $this->post('fee_amounts', []); // array: [fee_id => custom_amount]
+        
+        if (empty($studentId)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Student ID is required'], 400);
+            return;
+        }
+        
+        if (empty($feeAmounts) || !is_array($feeAmounts)) {
+            $this->jsonResponse(['success' => false, 'error' => 'No fee amounts provided'], 400);
+            return;
+        }
+        
+        // Validate student exists
+        $studentModel = new Student();
+        $student = $studentModel->find($studentId);
+        if (!$student) {
+            $this->jsonResponse(['success' => false, 'error' => 'Student not found'], 404);
+            return;
+        }
+        
+        $feeAssignmentModel = new \App\Models\FeeAssignment();
+        $updatedCount = 0;
+        $errors = [];
+        
+        foreach ($feeAmounts as $feeId => $customAmount) {
+            // Validate amount
+            if (!is_numeric($customAmount) || floatval($customAmount) < 0) {
+                $errors[] = "Invalid amount for fee ID {$feeId}";
+                continue;
+            }
+            
+            // Find the fee assignment
+            $assignment = $feeAssignmentModel->getByStudentAndFee($studentId, $feeId);
+            if (!$assignment) {
+                $errors[] = "Fee assignment not found for fee ID {$feeId}";
+                continue;
+            }
+            
+            // Update custom billing
+            $result = $feeAssignmentModel->updateCustomBilling(
+                $assignment['id'],
+                floatval($customAmount),
+                $description
+            );
+            
+            if ($result !== false) {
+                $updatedCount++;
+            } else {
+                $errors[] = "Failed to update fee ID {$feeId}";
+            }
+        }
+        
+        if ($updatedCount > 0) {
+            // Log audit trail
+            $academicYearModel = new AcademicYear();
+            $currentAcademicYear = $academicYearModel->getCurrent();
+            AuditHelper::log(
+                $_SESSION['user']['id'],
+                'custom_billing',
+                'fee_assignments',
+                $studentId,
+                null,
+                ['student_id' => $studentId, 'fee_count' => $updatedCount, 'description' => $description],
+                $currentAcademicYear ? $currentAcademicYear['id'] : null,
+                $currentAcademicYear ? $currentAcademicYear['term'] : null
+            );
+            
+            $this->jsonResponse([
+                'success' => true,
+                'message' => "Custom billing set for {$updatedCount} fee(s).",
+                'errors' => $errors
+            ]);
+        } else {
+            $this->jsonResponse([
+                'success' => false,
+                'error' => 'Failed to update any billing amounts',
+                'errors' => $errors
+            ], 500);
+        }
+    }
+    
     private function handleProfilePictureUpload($file)
     {
         // Define upload directory (in storage directory)

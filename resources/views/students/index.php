@@ -350,73 +350,169 @@ $studentCategoryLabels = [
     </div>
 </div>
 
+<!-- Custom Billing Modal -->
+<div id="customBillingModal" class="fixed inset-0 z-60 overflow-y-auto hidden">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-900 opacity-80"></div>
+        </div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center mr-3">
+                            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white" id="billingModalTitle">Custom Billing</h3>
+                            <p class="text-emerald-100 text-sm" id="billingModalSubtitle">Set partial fee amounts for this student</p>
+                        </div>
+                    </div>
+                    <button type="button" id="closeCustomBillingModal" class="text-white hover:text-emerald-200 transition-colors">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="px-6 py-5">
+                <!-- Info banner -->
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 flex items-start">
+                    <svg class="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm text-amber-700">
+                        This student was admitted mid-term. Set the partial fee amounts they are expected to pay. Leave at the full amount to charge normally.
+                    </p>
+                </div>
+
+                <!-- Fee list -->
+                <div id="billingFeesList">
+                    <div class="flex justify-center items-center h-20">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
+                    </div>
+                </div>
+
+                <!-- Description field -->
+                <div class="mt-5">
+                    <label for="billingDescription" class="block text-sm font-medium text-gray-700 mb-1">
+                        Reason / Description <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="billingDescription" rows="3"
+                        class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                        placeholder="e.g. Student admitted in week 3 of Term 1; charged 60% of full fee..."></textarea>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <button type="button" id="skipBillingBtn"
+                    class="text-sm font-medium text-gray-600 hover:text-gray-800 underline transition-colors">
+                    Skip &amp; use standard amounts
+                </button>
+                <div class="flex gap-3">
+                    <button type="button" id="confirmBillingBtn"
+                        class="inline-flex items-center px-5 py-2 border-2 border-green-700 text-sm font-semibold rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                        <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Confirm Billing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const openModalBtn = document.getElementById('openAddStudentModal');
     const closeModalBtn = document.getElementById('closeAddStudentModal');
     const modal = document.getElementById('addStudentModal');
     const modalContent = document.getElementById('addStudentModalContent');
+
+    // â”€â”€â”€ Custom billing state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    let currentStudentId = null;
+    const billingModal = document.getElementById('customBillingModal');
     
-    // Open modal
+    // â”€â”€â”€ Open / close add-student modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     openModalBtn.addEventListener('click', function() {
         modal.classList.remove('hidden');
-        // Load the form content via AJAX
         loadAddStudentForm();
     });
-    
-    // Close modal
-    closeModalBtn.addEventListener('click', function() {
-        modal.classList.add('hidden');
-    });
-    
-    // Close modal when clicking outside
+    closeModalBtn.addEventListener('click', closeAddStudentModal);
     modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.classList.add('hidden');
-        }
+        if (e.target === modal) closeAddStudentModal();
     });
-    
-    // Handle form submission
+    function closeAddStudentModal() {
+        modal.classList.add('hidden');
+    }
+
+    // â”€â”€â”€ Required-fields tracking (shows Proceed to Billing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const REQUIRED_IDS = ['first_name','last_name','dob','gender','class_id','guardian_phone'];
+    function checkRequiredFields() {
+        const proceedBtn = modalContent.querySelector('#proceedToBillingBtn');
+        if (!proceedBtn) return;
+        const allFilled = REQUIRED_IDS.every(id => {
+            const el = modalContent.querySelector('#' + id);
+            return el && el.value.trim() !== '';
+        });
+        proceedBtn.style.display = allFilled ? 'inline-flex' : 'none';
+    }
+
+    // â”€â”€â”€ Normal form submit handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let isSubmitting = false;
     function handleFormSubmit(e) {
         e.preventDefault();
-        
+        submitStudentForm(e.target, false);
+    }
+
+    // â”€â”€â”€ Shared submit function (proceedToBilling flag) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function submitStudentForm(form, proceedToBilling) {
         if (isSubmitting) return;
         isSubmitting = true;
-        
-        const form = e.target;
+
         const formData = new FormData(form);
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        
-        // Show loading state
-        submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
-        submitBtn.disabled = true;
-        
+        const submitBtn  = form.querySelector('#saveStudentBtn');
+        const billingBtn = form.querySelector('#proceedToBillingBtn');
+        const originalSubmitText  = submitBtn ? submitBtn.innerHTML : '';
+        const originalBillingText = billingBtn ? billingBtn.innerHTML : '';
+        const spinner = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+        if (submitBtn)  { submitBtn.innerHTML = spinner + ' Saving...'; submitBtn.disabled = true; }
+        if (billingBtn) { billingBtn.innerHTML = spinner + ' Saving...'; billingBtn.disabled = true; }
+
         fetch(form.action, {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
-                // Close modal
-                modal.classList.add('hidden');
-                // Reload the page to show the new student and trigger the global toast
-                location.reload();
+                if (proceedToBilling && data.student_id) {
+                    // Save the student ID, close the add modal, open billing modal
+                    currentStudentId = data.student_id;
+                    closeAddStudentModal();
+                    openCustomBillingModal(data.student_id);
+                } else {
+                    closeAddStudentModal();
+                    location.reload();
+                }
             } else {
-                // Show error message via global toast function if available, otherwise fallback to alert
                 if (typeof window.showToast === 'function') {
                     window.showToast(data.error || 'Failed to add student. Please try again.', 'error');
                 } else {
                     alert(data.error || 'Failed to add student. Please try again.');
                 }
-                // Reset button
-                submitBtn.innerHTML = originalBtnText;
-                submitBtn.disabled = false;
+                if (submitBtn)  { submitBtn.innerHTML = originalSubmitText;  submitBtn.disabled  = false; }
+                if (billingBtn) { billingBtn.innerHTML = originalBillingText; billingBtn.disabled = false; }
                 isSubmitting = false;
             }
         })
@@ -427,98 +523,252 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 alert('An error occurred. Please try again.');
             }
-            // Reset button
-            submitBtn.innerHTML = originalBtnText;
-            submitBtn.disabled = false;
+            if (submitBtn)  { submitBtn.innerHTML = originalSubmitText;  submitBtn.disabled  = false; }
+            if (billingBtn) { billingBtn.innerHTML = originalBillingText; billingBtn.disabled = false; }
             isSubmitting = false;
         });
     }
 
-    // Load add student form via AJAX
+    // â”€â”€â”€ Load add student form via AJAX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function loadAddStudentForm() {
         modalContent.innerHTML = '<div class="flex justify-center items-center h-32"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
         isSubmitting = false;
 
-        fetch('/students/create')
-            .then(response => response.text())
+        // Send the X-Requested-With header so the controller returns ONLY the form partial
+        fetch('/students/create', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(r => r.text())
             .then(html => {
-                // Create a temporary div to parse the HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Extract the form content
-                const formElement = doc.querySelector('form');
-                if (formElement) {
-                    modalContent.innerHTML = formElement.outerHTML;
-                    
-                    // Add event listeners for the form
-                    const form = modalContent.querySelector('form');
+                // Controller returns the form partial directly when AJAX header is set
+                modalContent.innerHTML = html;
+                const form = modalContent.querySelector('form');
+
+                if (!form) {
+                    modalContent.innerHTML = '<p class="text-red-500">Error loading form. Please try again.</p>';
+                    return;
+                }
+
+                    // Normal submit
                     form.addEventListener('submit', handleFormSubmit);
-                    
-                    // Re-attach the generate admission number functionality
-                    const generateBtn = modalContent.querySelector('#generate-admission-btn');
+
+                    // â”€â”€ Proceed to Billing button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    const billingBtn = modalContent.querySelector('#proceedToBillingBtn');
+                    if (billingBtn) {
+                        billingBtn.addEventListener('click', function() {
+                            submitStudentForm(form, true);
+                        });
+                    }
+
+                    // â”€â”€ Watch required fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    REQUIRED_IDS.forEach(id => {
+                        const el = form.querySelector('#' + id);
+                        if (el) {
+                            el.addEventListener('input',  checkRequiredFields);
+                            el.addEventListener('change', checkRequiredFields);
+                        }
+                    });
+                    checkRequiredFields(); // Run once on load
+
+                    // â”€â”€ Generate admission number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    const generateBtn   = modalContent.querySelector('#generate-admission-btn');
                     const admissionInput = modalContent.querySelector('#admission_no');
-                    const admissionHint = modalContent.querySelector('#admission_format_hint');
-                    
+                    const admissionHint  = modalContent.querySelector('#admission_format_hint');
                     if (generateBtn && admissionInput) {
                         generateBtn.addEventListener('click', function() {
                             fetch('/settings/generate/admission')
-                                .then(response => response.json())
+                                .then(r => r.json())
                                 .then(data => {
-                                    if (data.admission_number) {
-                                        admissionInput.value = data.admission_number;
-                                    }
-                                    if (admissionHint && data.format_description) {
-                                        admissionHint.textContent = data.format_description;
-                                    }
+                                    if (data.admission_number) admissionInput.value = data.admission_number;
+                                    if (admissionHint && data.format_description) admissionHint.textContent = data.format_description;
+                                    checkRequiredFields();
                                 })
-                                .catch(error => {
-                                    console.error('Error generating admission number:', error);
-                                    // Fallback to client-side generation
-                                    const prefix = 'EPI'; // Default prefix
-                                    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '');
-                                    admissionInput.value = prefix + '-' + timestamp;
+                                .catch(() => {
+                                    const ts = new Date().toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '');
+                                    admissionInput.value = 'EPI-' + ts;
+                                    checkRequiredFields();
                                 });
                         });
                     }
 
-                    // Attach category logic
-                    const categorySelect = modalContent.querySelector('#student_category');
-                    const categoryDetailsContainer = modalContent.querySelector('#category_details_container');
-                    const categoryDetailsInput = modalContent.querySelector('#student_category_details');
-                    const categoryDetailsAsterisk = modalContent.querySelector('#category_details_asterisk');
-
+                    // â”€â”€ Category details logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    const categorySelect     = modalContent.querySelector('#student_category');
+                    const categoryContainer  = modalContent.querySelector('#category_details_container');
+                    const categoryInput      = modalContent.querySelector('#student_category_details');
+                    const categoryAsterisk   = modalContent.querySelector('#category_details_asterisk');
                     function updateCategoryDetails() {
-                        if (!categorySelect || !categoryDetailsContainer || !categoryDetailsInput) return;
-                        
+                        if (!categorySelect || !categoryContainer || !categoryInput) return;
                         const type = categorySelect.value;
                         if (type === 'regular_day') {
-                            categoryDetailsContainer.style.display = 'none';
-                            categoryDetailsInput.required = false;
+                            categoryContainer.style.display = 'none';
+                            categoryInput.required = false;
                         } else if (type === 'regular_boarding') {
-                            categoryDetailsContainer.style.display = 'block';
-                            categoryDetailsInput.required = false;
-                            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.add('hidden');
+                            categoryContainer.style.display = 'block';
+                            categoryInput.required = false;
+                            if (categoryAsterisk) categoryAsterisk.classList.add('hidden');
                         } else if (type === 'international') {
-                            categoryDetailsContainer.style.display = 'block';
-                            categoryDetailsInput.required = true;
-                            if (categoryDetailsAsterisk) categoryDetailsAsterisk.classList.remove('hidden');
+                            categoryContainer.style.display = 'block';
+                            categoryInput.required = true;
+                            if (categoryAsterisk) categoryAsterisk.classList.remove('hidden');
                         }
                     }
-
                     if (categorySelect) {
                         categorySelect.addEventListener('change', updateCategoryDetails);
-                        updateCategoryDetails(); // initialize
+                        updateCategoryDetails();
                     }
-                } else {
-                    modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
-                }
+
+                    // â”€â”€ Cancel button in form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    const cancelBtn = modalContent.querySelector('#closeAddStudentModal');
+                    if (cancelBtn) {
+                        cancelBtn.addEventListener('click', closeAddStudentModal);
+                    }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                modalContent.innerHTML = '<p>Error loading form. Please try again.</p>';
+            .catch(() => {
+                modalContent.innerHTML = '<p class="text-red-500">Error loading form. Please try again.</p>';
             });
     }
+
+    // â”€â”€â”€ Custom Billing Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function openCustomBillingModal(studentId) {
+        billingModal.classList.remove('hidden');
+        document.getElementById('billingFeesList').innerHTML = '<div class="flex justify-center items-center h-20"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div></div>';
+        document.getElementById('billingDescription').value = '';
+
+        // Load student fees
+        fetch('/payments/student-fees/' + studentId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.fee_allocations && data.fee_allocations.length > 0) {
+                renderBillingFees(data.fee_allocations);
+            } else {
+                document.getElementById('billingFeesList').innerHTML =
+                    '<p class="text-sm text-gray-500 text-center py-4">No fees are currently assigned to this student\'s class. Custom billing is not needed.</p>';
+                document.getElementById('confirmBillingBtn').disabled = true;
+            }
+        })
+        .catch(() => {
+            document.getElementById('billingFeesList').innerHTML =
+                '<p class="text-red-500 text-sm">Failed to load fee data.</p>';
+        });
+    }
+
+    function renderBillingFees(fees) {
+        let html = '<div class="space-y-3">';
+        html += '<p class="text-sm text-gray-600 mb-3 font-medium">Assigned fees for this student\'s class:</p>';
+        fees.forEach(function(fee) {
+            const fullAmt = parseFloat(fee.amount).toFixed(2);
+            html += `
+            <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                <div class="flex-1 mr-4">
+                    <div class="font-medium text-gray-800 text-sm">${escapeHtml(fee.fee_name)}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">Full amount: <span class="font-semibold text-gray-700">${fullAmt}</span></div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <label class="text-xs text-gray-500 whitespace-nowrap">Custom Amount:</label>
+                    <input type="number"
+                        class="billing-fee-input w-32 border border-gray-300 rounded-md py-1.5 px-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        data-fee-id="${fee.fee_id}"
+                        data-original="${fullAmt}"
+                        value="${fullAmt}"
+                        min="0"
+                        step="0.01"
+                        placeholder="${fullAmt}">
+                </div>
+            </div>`;
+        });
+        html += '</div>';
+        document.getElementById('billingFeesList').innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // Close billing modal
+    document.getElementById('closeCustomBillingModal').addEventListener('click', function() {
+        billingModal.classList.add('hidden');
+        location.reload();
+    });
+    document.getElementById('skipBillingBtn').addEventListener('click', function() {
+        billingModal.classList.add('hidden');
+        location.reload();
+    });
+    billingModal.addEventListener('click', function(e) {
+        if (e.target === billingModal) {
+            billingModal.classList.add('hidden');
+            location.reload();
+        }
+    });
+
+    // Confirm billing submission
+    document.getElementById('confirmBillingBtn').addEventListener('click', function() {
+        const description = document.getElementById('billingDescription').value.trim();
+        if (!description) {
+            alert('Please enter a reason/description for the custom billing.');
+            document.getElementById('billingDescription').focus();
+            return;
+        }
+
+        const inputs = document.querySelectorAll('.billing-fee-input');
+        if (inputs.length === 0) {
+            billingModal.classList.add('hidden');
+            location.reload();
+            return;
+        }
+
+        const feeAmounts = {};
+        let hasChanges = false;
+        inputs.forEach(function(input) {
+            const feeId = input.dataset.feeId;
+            const originalAmt = parseFloat(input.dataset.original);
+            const customAmt = parseFloat(input.value);
+            feeAmounts[feeId] = isNaN(customAmt) ? originalAmt : customAmt;
+            if (!isNaN(customAmt) && Math.abs(customAmt - originalAmt) > 0.001) hasChanges = true;
+        });
+
+        // Build form data
+        const formData = new FormData();
+        formData.append('student_id', currentStudentId);
+        formData.append('description', description);
+        for (const [feeId, amt] of Object.entries(feeAmounts)) {
+            formData.append('fee_amounts[' + feeId + ']', amt);
+        }
+
+        const confirmBtn = document.getElementById('confirmBillingBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-1.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+
+        fetch('/students/set-custom-billing', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            billingModal.classList.add('hidden');
+            if (data.success) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Student added and custom billing set successfully!', 'success');
+                }
+                setTimeout(() => location.reload(), 800);
+            } else {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(data.error || 'Failed to save custom billing.', 'error');
+                } else {
+                    alert(data.error || 'Failed to save custom billing.');
+                }
+                location.reload();
+            }
+        })
+        .catch(() => {
+            billingModal.classList.add('hidden');
+            location.reload();
+        });
+    });
 });
 </script>
 

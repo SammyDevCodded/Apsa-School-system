@@ -380,7 +380,7 @@
                             
                             <!-- Finance Dropdown -->
                             <div class="dropdown relative h-full flex items-center flex-shrink-0" data-dropdown="finance">
-                                <?php $isFinanceActive = isActiveGroup(['/fees', '/finance', '/finance/expenses']); ?>
+                                <?php $isFinanceActive = isActiveGroup(['/fees', '/finance', '/finance/expenses', '/finance/recurring-fees']); ?>
                                 <button class="dropdown-trigger <?= $isFinanceActive ? 'border-indigo-500 text-indigo-700' : 'border-transparent text-gray-800 hover:border-gray-300 hover:text-indigo-700' ?> inline-flex items-center px-1 pt-1 border-b-2 text-sm font-bold h-full transition-colors duration-200 whitespace-nowrap">
                                     <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -392,6 +392,7 @@
                                 </button>
                                 <div class="dropdown-menu dropdown-content absolute top-full left-0 hidden glass-morphism rounded-md mt-1 py-1 w-48 z-50 shadow-lg">
                                     <a href="/fees" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Fees</a>
+                                    <a href="/finance/recurring-fees" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Recurring Fees</a>
                                     <a href="/finance" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Finance Records</a>
                                     <a href="/finance/expenses" class="block px-4 py-2 text-sm text-gray-800 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">Expense Tracking</a>
                                 </div>
@@ -551,6 +552,7 @@
                     </button>
                     <div class="hidden pl-4 space-y-1" id="mobile-finance">
                         <a href="/fees" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Fees</a>
+                        <a href="/finance/recurring-fees" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Recurring Fees</a>
                         <a href="/finance" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Finance Records</a>
                         <a href="/finance/expenses" class="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-white hover:bg-opacity-20">Expense Tracking</a>
                     </div>
