@@ -26,7 +26,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY . .
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
 # Make storage directories writable
 RUN mkdir -p storage/uploads storage/backups storage/logs storage/framework/views storage/framework/cache && \
