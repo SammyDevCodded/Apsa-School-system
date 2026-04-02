@@ -1,0 +1,11 @@
+/vendor
+/node_modules
+/.env
+/storage/logs
+/storage/framework/views
+/storage/framework/cache
+.DS_Store
+Thumbs.db
+*.log
+*.bak
+*.tmp

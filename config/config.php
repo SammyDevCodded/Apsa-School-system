@@ -5,18 +5,19 @@ if (!defined('ROOT_PATH')) {
 }
 
 // Database configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'school_erp');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
+define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'school_erp'));
+define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQLPASSWORD') ?: ''));
+define('DB_PORT', getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'));
 define('DB_CHARSET', 'utf8mb4');
 
 // Application configuration
-define('APP_NAME', 'APSA-ERP');
+define('APP_NAME', getenv('APP_NAME') ?: 'APSA-ERP');
 define('APP_VERSION', '1.0.0');
-define('APP_ENV', 'local');
-define('APP_DEBUG', true);
-define('APP_URL', 'http://localhost:8000');
+define('APP_ENV', getenv('APP_ENV') ?: 'local');
+define('APP_DEBUG', getenv('APP_DEBUG') !== false ? filter_var(getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN) : true);
+define('APP_URL', getenv('APP_URL') ?: 'http://localhost:8000');
 
 // Security configuration
 define('SECRET_KEY', 'your-secret-key-here');

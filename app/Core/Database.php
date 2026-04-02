@@ -25,7 +25,8 @@ class Database
     private function connect()
     {
         try {
-            $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset={$this->charset}";
+            $port = defined('DB_PORT') ? DB_PORT : 3306;
+            $dsn = "mysql:host={$this->host};port={$port};dbname={$this->dbname};charset={$this->charset}";
             $options = [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,

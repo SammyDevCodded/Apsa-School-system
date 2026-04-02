@@ -10,7 +10,8 @@ echo "==========================================================\n\n";
 
 try {
     // Create PDO connection
-    $pdo = new PDO("mysql:host=" . DB_HOST, DB_USER, DB_PASS);
+    $port = defined('DB_PORT') ? DB_PORT : 3306;
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";port=" . $port, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Create database if it doesn't exist
