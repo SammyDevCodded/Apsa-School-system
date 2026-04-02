@@ -9,13 +9,18 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql gd zip
 
 # Enable Apache mod_rewrite and fix MPM conflict
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork rewrite
+RUN a2dismod mpm_event mpm_worker mpm_itk 2>/dev/null || true && \
+    a2enmod mpm_prefork rewrite && \
+    a2dismod mpm_event mpm_worker mpm_itk 2>/dev/null || true
 
 # Update Apache configuration to point to public directory
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Verify only one MPM is enabled
+RUN apache2ctl -M 2>&1 | grep -c "mpm_" | grep -q "^1$" || \
+    (echo "ERROR: Multiple MPM modules detected" && exit 1)
 
 # Set working directory
 WORKDIR /var/www/html
