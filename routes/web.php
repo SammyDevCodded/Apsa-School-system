@@ -91,6 +91,7 @@ $router->get('/finance/recurring-fees/([0-9]+)/payments', 'RecurringFeeControlle
 $router->get('/finance/recurring-fees/([0-9]+)/ledger', 'RecurringFeeController@getLedger', ['auth']);
 $router->post('/finance/recurring-fees/waive', 'RecurringFeeController@waiveEntry', ['auth']);
 $router->post('/finance/recurring-fees/unwaive', 'RecurringFeeController@unwaiveEntry', ['auth']);
+$router->get('/finance/recurring-fees/reports/data', 'RecurringFeeController@getReportsData', ['auth']);
 
 
 

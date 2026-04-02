@@ -38,6 +38,9 @@ ob_start();
             <button data-tab="pay" class="rf-tab border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap pb-3 px-1 text-sm font-medium">
                 💳 Pay
             </button>
+            <button data-tab="reports" class="rf-tab border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap pb-3 px-1 text-sm font-medium">
+                📊 Reports
+            </button>
         </nav>
     </div>
 
@@ -540,6 +543,104 @@ ob_start();
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- REPORTS TAB PANEL                                                          -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="tab-reports" class="rf-panel hidden">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <!-- Filter bar -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 mb-5">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Report Type</label>
+                <select id="repType" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="payments">Payments</option>
+                    <option value="waived">Waived Entries</option>
+                    <option value="advances">Advances (Overpayments)</option>
+                    <option value="all">All (Grand Ledger)</option>
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Fee Service</label>
+                <select id="repFee" class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">— All Fees —</option>
+                    <?php foreach ($fees as $f): ?>
+                    <option value="<?= $f['id'] ?>"><?= htmlspecialchars($f['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+                <input type="date" id="repFrom" value="<?= date('Y-m-01') ?>"
+                    class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+                <input type="date" id="repTo" value="<?= date('Y-m-d') ?>"
+                    class="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex items-end">
+                <button id="btnGenerateReport"
+                    class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-colors">
+                    <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Generate
+                </button>
+            </div>
+        </div>
+
+        <!-- Student Optional Search -->
+        <div class="mb-5 bg-gray-50 p-3 rounded-lg border border-gray-200 flex items-center gap-3">
+            <div class="flex-1 relative">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Filter by Student (Optional)</label>
+                <input type="text" id="repStudentSearch" autocomplete="off"
+                    placeholder="Search by name or admission no…"
+                    class="w-full border border-gray-300 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <div id="repStudentResults" class="absolute z-10 w-full max-w-md border border-gray-200 rounded-lg bg-white shadow-lg max-h-44 overflow-y-auto hidden"></div>
+            </div>
+            <div id="repSelectedStudent" class="hidden flex-1 items-center justify-between bg-indigo-50 rounded-lg px-3 py-1.5 mt-5">
+                <div>
+                    <span id="repStudentName" class="font-semibold text-sm text-indigo-900"></span>
+                    <span id="repStudentAdm" class="ml-2 text-xs text-indigo-500"></span>
+                </div>
+                <button onclick="clearRepStudent()" class="text-indigo-400 hover:text-indigo-700 font-bold">&times; Clear</button>
+            </div>
+            <input type="hidden" id="repStudentId" value="">
+        </div>
+
+        <!-- Report Toolbar -->
+        <div class="flex justify-between items-center mb-3 hidden" id="reportToolbar">
+            <h3 class="font-bold text-gray-800" id="reportTitle">Report Results</h3>
+            <button onclick="printReport()"
+                class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-colors">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print Report
+            </button>
+        </div>
+
+        <!-- Report Container -->
+        <div id="reportContainer" class="border border-gray-200 rounded-lg overflow-hidden hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm" id="reportTable">
+                    <thead class="bg-gray-50" id="reportThead"></thead>
+                    <tbody class="bg-white divide-y divide-gray-100" id="reportTbody"></tbody>
+                    <tfoot class="bg-gray-50 font-semibold" id="reportTfoot"></tfoot>
+                </table>
+            </div>
+        </div>
+        
+        <div id="reportEmptyState" class="text-center py-12 text-gray-400 text-sm">
+            Select filters and click Generate to view the report.
+        </div>
+        <div id="reportLoadingState" class="text-center py-12 text-indigo-500 text-sm hidden flex flex-col items-center">
+            <svg class="animate-spin h-6 w-6 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            Loading data...
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
 <!-- LEDGER MODAL                                                               -->
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <div id="ledgerModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-6 pb-6 px-4" style="background:rgba(15,23,42,0.55);backdrop-filter:blur(4px)">
@@ -600,6 +701,8 @@ ob_start();
 <script>
 // Currency symbol from school settings
 const CURRENCY = <?= json_encode($currencySymbol) ?>;
+const SCHOOL_NAME = <?= json_encode($schoolName ?? 'School Name') ?>;
+const SCHOOL_LOGO = <?= json_encode($schoolLogo ?? '') ?>;
 
 // ─── Reliable notify helper (works even before layout scripts load) ───────────
 function notify(msg, type) {
@@ -1500,6 +1603,336 @@ function printLedger() {
     win.focus();
     setTimeout(() => { win.print(); }, 400);
 }
+
+// ─── Reports Tab ─────────────────────────────────────────────────────────────
+let repSearchTimer = null;
+const repStudentSearch = document.getElementById('repStudentSearch');
+const repStudentResults = document.getElementById('repStudentResults');
+const repStudentId = document.getElementById('repStudentId');
+
+function clearRepStudent() {
+    repStudentId.value = '';
+    repStudentSearch.value = '';
+    document.getElementById('repSelectedStudent').classList.add('hidden');
+    repStudentSearch.parentElement.classList.remove('hidden');
+}
+
+repStudentSearch.addEventListener('input', function() {
+    clearTimeout(repSearchTimer);
+    const q = this.value.trim();
+    if (q.length < 2) {
+        repStudentResults.classList.add('hidden');
+        return;
+    }
+    
+    repStudentResults.classList.remove('hidden');
+    repStudentResults.innerHTML = '<div class="p-2 text-xs text-center text-gray-500">Searching...</div>';
+    
+    repSearchTimer = setTimeout(() => {
+        fetch('/finance/recurring-fees/students/search?q=' + encodeURIComponent(q), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(students => {
+            if (!Array.isArray(students) || students.length === 0) {
+                repStudentResults.innerHTML = '<div class="p-2 text-xs text-center text-gray-500">No matches found.</div>';
+                return;
+            }
+            repStudentResults.innerHTML = students.map(s => `
+                <div class="px-3 py-2 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-0"
+                     onclick='selectRepStudent(${s.id}, ${JSON.stringify(s.first_name + " " + s.last_name)}, ${JSON.stringify(s.admission_no)})'>
+                    <div class="font-medium text-sm text-gray-800">${s.first_name} ${s.last_name}</div>
+                    <div class="text-xs text-gray-500">${s.admission_no} &bull; ${s.class_name || 'No Class'}</div>
+                </div>
+            `).join('');
+        })
+        .catch(() => {
+            repStudentResults.innerHTML = '<div class="p-2 text-xs text-center text-red-500">Search error.</div>';
+        });
+    }, 300);
+});
+
+// Hide results when clicking outside
+document.addEventListener('click', (e) => {
+    if (repStudentSearch && repStudentResults && !repStudentSearch.contains(e.target) && !repStudentResults.contains(e.target)) {
+        repStudentResults.classList.add('hidden');
+    }
+});
+
+window.selectRepStudent = function(id, name, adm) {
+    repStudentId.value = id;
+    document.getElementById('repStudentName').textContent = name;
+    document.getElementById('repStudentAdm').textContent = adm;
+    document.getElementById('repSelectedStudent').classList.remove('hidden');
+    repStudentSearch.parentElement.classList.add('hidden');
+    repStudentResults.classList.add('hidden');
+};
+
+document.getElementById('btnGenerateReport').addEventListener('click', () => {
+    const type = document.getElementById('repType').value;
+    const feeId = document.getElementById('repFee').value;
+    const studentId = document.getElementById('repStudentId').value;
+    const fromDate = document.getElementById('repFrom').value;
+    const toDate = document.getElementById('repTo').value;
+    
+    document.getElementById('reportEmptyState').classList.add('hidden');
+    document.getElementById('reportToolbar').classList.add('hidden');
+    document.getElementById('reportContainer').classList.add('hidden');
+    document.getElementById('reportLoadingState').classList.remove('hidden');
+    
+    let url = `/finance/recurring-fees/reports/data?type=${type}`;
+    if (feeId) url += `&fee_id=${feeId}`;
+    if (studentId) url += `&student_id=${studentId}`;
+    if (fromDate && !document.getElementById('repFrom').disabled) url += `&from_date=${fromDate}`;
+    if (toDate && !document.getElementById('repTo').disabled) url += `&to_date=${toDate}`;
+    
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(res => {
+            document.getElementById('reportLoadingState').classList.add('hidden');
+            if (res.success) {
+                renderReportTable(type, res.data);
+            } else {
+                notify(res.error || 'Failed to fetch report', 'error');
+                document.getElementById('reportEmptyState').classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('reportLoadingState').classList.add('hidden');
+            notify('Error loading report data', 'error');
+            document.getElementById('reportEmptyState').classList.remove('hidden');
+        });
+});
+
+document.getElementById('repType').addEventListener('change', function() {
+    const isAdvances = this.value === 'advances';
+    document.getElementById('repFrom').disabled = isAdvances;
+    document.getElementById('repTo').disabled = isAdvances;
+    document.getElementById('repFrom').classList.toggle('opacity-50', isAdvances);
+    document.getElementById('repTo').classList.toggle('opacity-50', isAdvances);
+});
+
+function renderReportTable(type, data) {
+    const th = document.getElementById('reportThead');
+    const tb = document.getElementById('reportTbody');
+    const tf = document.getElementById('reportTfoot');
+    
+    if (!data || data.length === 0) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportEmptyState').innerHTML = 'No data found for the selected filters.';
+        return;
+    }
+    
+    document.getElementById('reportToolbar').classList.remove('hidden');
+    document.getElementById('reportContainer').classList.remove('hidden');
+    
+    let headerHtml = '<tr>';
+    let bodyHtml = '';
+    let footerHtml = '';
+    
+    const thClasses = "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap";
+    const tdClasses = "px-4 py-3 whitespace-nowrap text-gray-700";
+    
+    if (type === 'payments') {
+        document.getElementById('reportTitle').textContent = 'Payments Report';
+        headerHtml += `
+            <th class="${thClasses}">Date</th>
+            <th class="${thClasses}">Student</th>
+            <th class="${thClasses}">Class</th>
+            <th class="${thClasses}">Fee Service</th>
+            <th class="${thClasses}">Method</th>
+            <th class="${thClasses} text-right">Amount (${CURRENCY})</th>
+        </tr>`;
+        
+        let total = 0;
+        data.forEach(row => {
+            total += parseFloat(row.amount_paid);
+            bodyHtml += `
+                <tr class="hover:bg-gray-50">
+                    <td class="${tdClasses}">${row.payment_date}</td>
+                    <td class="${tdClasses} font-medium text-gray-900">${row.first_name} ${row.last_name} <span class="text-xs text-gray-400 ml-1">(${row.admission_no})</span></td>
+                    <td class="${tdClasses}">${row.class_name || '-'}</td>
+                    <td class="${tdClasses}">${row.fee_name}</td>
+                    <td class="${tdClasses} capitalize">${(row.payment_method||'').replace('_', ' ')} ${row.reference_no ? `<br><span class="text-xs text-gray-400">${row.reference_no}</span>` : ''}</td>
+                    <td class="${tdClasses} text-right font-medium text-indigo-600">${parseFloat(row.amount_paid).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        footerHtml = `
+            <tr>
+                <td colspan="5" class="${thClasses} text-right">Total Payments:</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-indigo-700">${total.toFixed(2)}</td>
+            </tr>
+        `;
+        
+    } else if (type === 'waived') {
+        document.getElementById('reportTitle').textContent = 'Waived Entries Report';
+        headerHtml += `
+            <th class="${thClasses}">Service Date</th>
+            <th class="${thClasses}">Student</th>
+            <th class="${thClasses}">Class</th>
+            <th class="${thClasses}">Fee Service</th>
+            <th class="${thClasses}">Reason</th>
+            <th class="${thClasses} text-right">Amount (${CURRENCY})</th>
+        </tr>`;
+        
+        let total = 0;
+        data.forEach(row => {
+            total += parseFloat(row.amount);
+            bodyHtml += `
+                <tr class="hover:bg-gray-50">
+                    <td class="${tdClasses}">${row.service_date}</td>
+                    <td class="${tdClasses} font-medium text-gray-900">${row.first_name} ${row.last_name} <span class="text-xs text-gray-400 ml-1">(${row.admission_no})</span></td>
+                    <td class="${tdClasses}">${row.class_name || '-'}</td>
+                    <td class="${tdClasses}">${row.fee_name}</td>
+                    <td class="${tdClasses} text-gray-500 text-xs max-w-xs truncate" title="${row.waive_reason}">${row.waive_reason || '-'}</td>
+                    <td class="${tdClasses} text-right font-medium text-orange-600">${parseFloat(row.amount).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        footerHtml = `
+            <tr>
+                <td colspan="5" class="${thClasses} text-right">Total Waived Amount:</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-orange-700">${total.toFixed(2)}</td>
+            </tr>
+        `;
+        
+    } else if (type === 'advances') {
+        document.getElementById('reportTitle').textContent = 'Advances & Overpayments Report';
+        headerHtml += `
+            <th class="${thClasses}">Student</th>
+            <th class="${thClasses}">Class</th>
+            <th class="${thClasses}">Fee Service</th>
+            <th class="${thClasses} text-right">Total Billed (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Total Paid (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Advance Amount (${CURRENCY})</th>
+        </tr>`;
+        
+        let totalAdvances = 0;
+        data.forEach(row => {
+            totalAdvances += parseFloat(row.advance_amount);
+            bodyHtml += `
+                <tr class="hover:bg-gray-50">
+                    <td class="${tdClasses} font-medium text-gray-900">${row.first_name} ${row.last_name} <span class="text-xs text-gray-400 ml-1">(${row.admission_no})</span></td>
+                    <td class="${tdClasses}">${row.class_name || '-'}</td>
+                    <td class="${tdClasses}">${row.fee_name}</td>
+                    <td class="${tdClasses} text-right text-gray-500">${parseFloat(row.total_billed).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right text-gray-500">${parseFloat(row.total_paid).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right font-bold text-green-600">${parseFloat(row.advance_amount).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        footerHtml = `
+            <tr>
+                <td colspan="5" class="${thClasses} text-right">Total Advances:</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-green-700">${totalAdvances.toFixed(2)}</td>
+            </tr>
+        `;
+    } else if (type === 'all') {
+        document.getElementById('reportTitle').textContent = 'Grand Ledger Report';
+        headerHtml += `
+            <th class="${thClasses}">Student</th>
+            <th class="${thClasses}">Class</th>
+            <th class="${thClasses}">Fee Service</th>
+            <th class="${thClasses} text-right">Billed (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Paid (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Waived (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Outstanding (${CURRENCY})</th>
+            <th class="${thClasses} text-right">Advance (${CURRENCY})</th>
+        </tr>`;
+
+        let tbilled = 0, tpaid = 0, twaived = 0, toutstanding = 0, tadvance = 0;
+        data.forEach(row => {
+            tbilled += parseFloat(row.total_billed);
+            tpaid += parseFloat(row.total_paid);
+            twaived += parseFloat(row.total_waived);
+            toutstanding += parseFloat(row.outstanding_amount);
+            tadvance += parseFloat(row.advance_amount);
+            bodyHtml += `
+                <tr class="hover:bg-gray-50">
+                    <td class="${tdClasses} font-medium text-gray-900">${row.first_name} ${row.last_name} <span class="text-xs text-gray-400 ml-1">(${row.admission_no})</span></td>
+                    <td class="${tdClasses}">${row.class_name || '-'}</td>
+                    <td class="${tdClasses}">${row.fee_name}</td>
+                    <td class="${tdClasses} text-right text-gray-500">${parseFloat(row.total_billed).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right text-green-600">${parseFloat(row.total_paid).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right text-orange-600">${parseFloat(row.total_waived).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right font-bold text-red-600">${parseFloat(row.outstanding_amount).toFixed(2)}</td>
+                    <td class="${tdClasses} text-right font-bold text-indigo-600">${parseFloat(row.advance_amount).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        footerHtml = `
+            <tr>
+                <td colspan="3" class="${thClasses} text-right">Grand Totals:</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-gray-700">${tbilled.toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-green-700">${tpaid.toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-orange-700">${twaived.toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-red-700">${toutstanding.toFixed(2)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-right font-bold text-indigo-700">${tadvance.toFixed(2)}</td>
+            </tr>
+        `;
+    }
+    
+    th.innerHTML = headerHtml;
+    tb.innerHTML = bodyHtml;
+    tf.innerHTML = footerHtml;
+}
+
+function printReport() {
+    const title = document.getElementById('reportTitle').textContent;
+    const tableHtml = document.getElementById('reportTable').outerHTML;
+    
+    let headerHtml = '';
+    headerHtml += `<div style="text-align: center; margin-bottom: 20px;">`;
+    if (SCHOOL_LOGO && SCHOOL_LOGO !== '') {
+        headerHtml += `<img src="${SCHOOL_LOGO}" alt="School Logo" style="max-height: 80px; margin-bottom: 10px;">`;
+    }
+    headerHtml += `<div style="font-size: 28px; font-weight: bold; color: #333; margin-bottom: 5px;">${SCHOOL_NAME}</div>`;
+    headerHtml += `</div>`;
+    
+    const popup = window.open('', '_blank', 'width=900,height=700');
+    popup.document.write(`
+        <html>
+        <head>
+            <title>${title}</title>
+            <style>
+                body { font-family: system-ui, -apple-system, sans-serif; color: #333; padding: 20px; }
+                h1 { text-align: center; color: #1e1b4b; margin-bottom: 10px; font-size: 20px; text-transform: uppercase; }
+                .meta { text-align: center; margin-bottom: 30px; font-size: 13px; color: #666; }
+                table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 30px; }
+                th { background-color: #f3f4f6; color: #4b5563; text-transform: uppercase; font-size: 11px; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+                th.text-right, td.text-right { text-align: right; }
+                td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+                tfoot th, tfoot td { background-color: #f9fafb; font-weight: bold; font-size: 14px; border-top: 2px solid #e5e7eb; }
+                .text-gray-400 { color: #9ca3af; }
+                @media print {
+                    button { display: none; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            ${headerHtml}
+            <div style="text-align:center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px;">
+                <h1>${title}</h1>
+                <div class="meta">Generated on ${new Date().toLocaleString()}</div>
+            </div>
+            ${tableHtml}
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.print()" style="padding: 10px 20px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">Print Document</button>
+            </div>
+        </body>
+        </html>
+    `);
+    popup.document.close();
+    setTimeout(() => { popup.print(); }, 500);
+}
+
 </script>
 
 

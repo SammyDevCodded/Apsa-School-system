@@ -78,3 +78,51 @@ Initial Load Exam: Array
     [classwork_percentage] => 0.00
 )
 
+Initial Load Exam: Array
+(
+    [id] => 18
+    [name] => Final Exam
+    [term] => 1st Term
+    [class_id] => 13
+    [academic_year_id] => 2
+    [date] => 2025-10-28
+    [description] => 
+    [created_at] => 2025-10-28 11:53:21
+    [updated_at] => 2025-10-29 18:54:22
+    [grading_scale_id] => 1
+    [has_classwork] => 0
+    [classwork_percentage] => 0.00
+)
+
+Initial Load Exam: Array
+(
+    [id] => 18
+    [name] => Final Exam
+    [term] => 1st Term
+    [class_id] => 13
+    [academic_year_id] => 2
+    [date] => 2025-10-28
+    [description] => 
+    [created_at] => 2025-10-28 11:53:21
+    [updated_at] => 2025-10-29 18:54:22
+    [grading_scale_id] => 1
+    [has_classwork] => 0
+    [classwork_percentage] => 0.00
+)
+
+Initial Load Exam: Array
+(
+    [id] => 18
+    [name] => Final Exam
+    [term] => 1st Term
+    [class_id] => 13
+    [academic_year_id] => 2
+    [date] => 2025-10-28
+    [description] => 
+    [created_at] => 2025-10-28 11:53:21
+    [updated_at] => 2025-10-29 18:54:22
+    [grading_scale_id] => 1
+    [has_classwork] => 0
+    [classwork_percentage] => 0.00
+)
+

@@ -82,6 +82,12 @@ class ExpenseController extends Controller {
                  break;
             case 'requests':
                 $data['requests'] = $this->requestModel->getAllWithDetails();
+                // Load staff list for 'Request On Behalf' modal
+                $staffModel = new \App\Models\Staff();
+                $data['staffs'] = $staffModel->all();
+                
+                // Track Proxy authorization boolean natively via Controller scope
+                $data['can_request_on_behalf'] = $this->hasAnyRole(['super_admin', 'accountant']);
                 break;
             case 'cashbook':
                 $search = trim($_GET['search'] ?? '');
@@ -244,11 +250,23 @@ class ExpenseController extends Controller {
                 'requested_by' => $_SESSION['user']['id']
             ];
             
+            
             // Link to staff id if the requester is a staff
             $db = \App\Core\Database::getInstance();
-            $staff = $db->fetchOne("SELECT id FROM staff WHERE user_id = ?", [$_SESSION['user']['id']]);
-            if ($staff) {
-                $data['staff_id'] = $staff['id'];
+            
+            // "Request On Behalf" functionality for Administrators
+            $requestOnBehalf = isset($_POST['request_on_behalf']) && $_POST['request_on_behalf'] === '1';
+            $onBehalfStaffId = $_POST['on_behalf_staff_id'] ?? null;
+            $canProxy = $this->hasAnyRole(['super_admin', 'accountant']);
+            
+            if ($requestOnBehalf && $canProxy && !empty($onBehalfStaffId)) {
+                 $data['staff_id'] = $onBehalfStaffId;
+            } else {
+                 // Standard flow: tie the current user's profile automatically if they are a staff
+                 $staff = $db->fetchOne("SELECT id FROM staff WHERE user_id = ?", [$_SESSION['user']['id']]);
+                 if ($staff) {
+                     $data['staff_id'] = $staff['id'];
+                 }
             }
             
             if ($data['amount'] <= 0 || empty($data['purpose'])) {

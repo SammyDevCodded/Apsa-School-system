@@ -31,25 +31,31 @@ ob_start();
                         <div>
                             <label for="admission_no" class="block text-sm font-medium text-gray-700">Admission Number</label>
                             <div class="mt-1 flex rounded-md shadow-sm">
-                                <input type="text" name="admission_no" id="admission_no" value="<?= htmlspecialchars($student['admission_no'] ?? '') ?>" required
-                                    class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <input type="text" name="admission_no" id="admission_no" value="<?= htmlspecialchars($student['admission_no'] ?? '') ?>" <?= isset($isSuperAdmin) && $isSuperAdmin ? 'required' : 'readonly' ?>
+                                    class="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'bg-gray-100 cursor-not-allowed rounded-md' : 'rounded-l-md' ?>">
+                                <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                                 <button type="button" id="generate-admission-btn" class="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                                     Generate
                                 </button>
+                                <?php endif; ?>
                             </div>
+                            <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                             <p id="admission_format_hint" class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($formatDescription ?? 'Format: [Prefix]-[HHMMSS]') ?></p>
+                            <?php endif; ?>
                         </div>
 
                         <div>
                             <label for="admission_date" class="block text-sm font-medium text-gray-700">Admission Date</label>
                             <input type="date" name="admission_date" id="admission_date" value="<?= htmlspecialchars($student['admission_date'] ?? date('Y-m-d')) ?>"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'readonly' : '' ?>
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'bg-gray-100 cursor-not-allowed pointer-events-none' : '' ?>">
                         </div>
 
                         <div>
                             <label for="academic_year_id" class="block text-sm font-medium text-gray-700">Academic Year (Optional)</label>
                             <select name="academic_year_id" id="academic_year_id"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'disabled' : '' ?>
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'bg-gray-100 cursor-not-allowed' : '' ?>">
                                 <option value="">None (Keep existing value)</option>
                                 <?php 
                                 $academicYearModel = new \App\Models\AcademicYear();
@@ -95,8 +101,9 @@ ob_start();
 
                         <div>
                             <label for="class_id" class="block text-sm font-medium text-gray-700">Class</label>
-                            <select name="class_id" id="class_id" required
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <select name="class_id" id="class_id" <?= isset($isSuperAdmin) && $isSuperAdmin ? 'required' : '' ?>
+                                <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'disabled' : '' ?>
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm <?= !isset($isSuperAdmin) || !$isSuperAdmin ? 'bg-gray-100 cursor-not-allowed' : '' ?>">
                                 <option value="">Select Class</option>
                                 <?php foreach ($classes ?? [] as $class): ?>
                                     <option value="<?= $class['id'] ?>" <?= (isset($student['class_id']) && $student['class_id'] == $class['id']) ? 'selected' : '' ?>>

@@ -368,6 +368,8 @@ class FinanceController extends Controller
                     'first_name' => $student['first_name'],
                     'last_name' => $student['last_name'],
                     'admission_no' => $student['admission_no'],
+                    'guardian_name' => $student['guardian_name'] ?? 'N/A',
+                    'guardian_phone' => $student['guardian_phone'] ?? 'N/A',
                     'class_name' => $student['class_name'] ?? 'N/A',
                     'fee_type' => $student['fee_type'] ?? 'N/A',
                     'fee_name' => $student['fee_name'] ?? 'N/A',

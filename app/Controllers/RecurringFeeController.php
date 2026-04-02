@@ -44,7 +44,8 @@ class RecurringFeeController extends Controller
         require_once ROOT_PATH . '/app/Helpers/TemplateHelper.php';
         $settings       = getSchoolSettings();
         $currencySymbol = $settings['currency_symbol'] ?? '₵';
-
+        $schoolName     = $settings['school_name'] ?? 'School Name';
+        $schoolLogo     = !empty($settings['school_logo']) ? $settings['school_logo'] : '/assets/images/logo.png';
 
         $this->view('recurring_fees/index', [
             'title'          => 'Recurring Fees',
@@ -52,6 +53,8 @@ class RecurringFeeController extends Controller
             'classes'        => $classes,
             'currentYear'    => $currentYear,
             'currencySymbol' => $currencySymbol,
+            'schoolName'     => $schoolName,
+            'schoolLogo'     => $schoolLogo,
         ]);
     }
 
@@ -679,6 +682,171 @@ class RecurringFeeController extends Controller
                 'total_days'    => count($entries),
             ],
         ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /finance/recurring-fees/reports/data
+    // Fetch JSON data for reports (Payments, Waived, Advances)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function getReportsData()
+    {
+        if (!$this->requireAuth()) return;
+
+        $type = $this->get('type', 'payments');
+        $feeId = (int)$this->get('fee_id', 0);
+        $studentId = (int)$this->get('student_id', 0);
+        $fromDate = $this->get('from_date', '');
+        $toDate = $this->get('to_date', '');
+
+        $db = \App\Core\Database::getInstance();
+        $params = [];
+        $where = "1=1";
+
+        if ($feeId) {
+            $where .= " AND fee.id = ?";
+            $params[] = $feeId;
+        }
+        if ($studentId) {
+            $where .= " AND s.id = ?";
+            $params[] = $studentId;
+        }
+
+        if ($type === 'payments') {
+            if ($fromDate) { $where .= " AND rfp.payment_date >= ?"; $params[] = $fromDate; }
+            if ($toDate) { $where .= " AND rfp.payment_date <= ?"; $params[] = $toDate; }
+
+            $sql = "SELECT rfp.id, rfp.payment_date, rfp.amount_paid, rfp.payment_method, rfp.reference_no,
+                           s.first_name, s.last_name, s.admission_no, c.name AS class_name,
+                           fee.name AS fee_name
+                    FROM recurring_fee_payments rfp
+                    JOIN students s ON rfp.student_id = s.id
+                    LEFT JOIN classes c ON s.class_id = c.id
+                    JOIN recurring_fees fee ON rfp.recurring_fee_id = fee.id
+                    WHERE $where
+                    ORDER BY rfp.payment_date DESC, rfp.id DESC";
+            
+            $data = $db->fetchAll($sql, $params);
+            $this->jsonResponse(['success' => true, 'data' => $data]);
+            return;
+        }
+
+        if ($type === 'waived') {
+            if ($fromDate) { $where .= " AND rfe.service_date >= ?"; $params[] = $fromDate; }
+            if ($toDate) { $where .= " AND rfe.service_date <= ?"; $params[] = $toDate; }
+
+            $sql = "SELECT rfe.id, rfe.service_date, rfe.amount, rfe.waive_reason,
+                           s.first_name, s.last_name, s.admission_no, c.name AS class_name,
+                           fee.name AS fee_name
+                    FROM recurring_fee_entries rfe
+                    JOIN recurring_fee_enrollments rfen ON rfe.enrollment_id = rfen.id
+                    JOIN recurring_fees fee ON rfen.recurring_fee_id = fee.id
+                    JOIN students s ON rfe.student_id = s.id
+                    LEFT JOIN classes c ON s.class_id = c.id
+                    WHERE rfe.status = 'waived' AND $where
+                    ORDER BY rfe.service_date DESC, rfe.id DESC";
+
+            $data = $db->fetchAll($sql, $params);
+            $this->jsonResponse(['success' => true, 'data' => $data]);
+            return;
+        }
+
+        if ($type === 'advances') {
+            // For advances, date filters normally don't make sense since it's a current balance snapshot.
+            $sql = "SELECT s.id AS student_id, s.first_name, s.last_name, s.admission_no, c.name AS class_name,
+                           fee.id AS fee_id, fee.name AS fee_name,
+                           (SELECT COALESCE(SUM(amount), 0) FROM recurring_fee_entries WHERE student_id = s.id AND enrollment_id IN (SELECT id FROM recurring_fee_enrollments WHERE recurring_fee_id = fee.id) AND status != 'waived') AS total_billed,
+                           (SELECT COALESCE(SUM(amount_paid), 0) FROM recurring_fee_payments WHERE student_id = s.id AND recurring_fee_id = fee.id) AS total_paid
+                    FROM students s
+                    JOIN recurring_fee_enrollments rfen ON s.id = rfen.student_id
+                    JOIN recurring_fees fee ON rfen.recurring_fee_id = fee.id
+                    LEFT JOIN classes c ON s.class_id = c.id
+                    WHERE $where
+                    GROUP BY s.id, fee.id";
+
+            $rows = $db->fetchAll($sql, $params);
+            $advances = [];
+            foreach ($rows as $row) {
+                $billed = (float)$row['total_billed'];
+                $paid = (float)$row['total_paid'];
+                if ($paid > $billed) {
+                    $row['advance_amount'] = $paid - $billed;
+                    $advances[] = $row;
+                }
+            }
+            
+            usort($advances, fn($a, $b) => $b['advance_amount'] <=> $a['advance_amount']);
+
+            $this->jsonResponse(['success' => true, 'data' => $advances]);
+            return;
+        }
+
+        if ($type === 'all') {
+            // Grand Ledger: combines billed, paid, waived based on date ranges
+            $dateFilterEntries = "";
+            $dateFilterPayments = "";
+            $dateFilterParamsEntries = [];
+            $dateFilterParamsPayments = [];
+
+            if ($fromDate) {
+                $dateFilterEntries .= " AND service_date >= ?";
+                $dateFilterPayments .= " AND payment_date >= ?";
+                $dateFilterParamsEntries[] = $fromDate;
+                $dateFilterParamsPayments[] = $fromDate;
+            }
+            if ($toDate) {
+                $dateFilterEntries .= " AND service_date <= ?";
+                $dateFilterPayments .= " AND payment_date <= ?";
+                $dateFilterParamsEntries[] = $toDate;
+                $dateFilterParamsPayments[] = $toDate;
+            }
+
+            // We need to inject these parameters into the main query
+            // However, prepared statements with variable numbers of parameters inside subqueries in MySQL 
+            // can be tricky if we don't bind them in the exact order.
+            // Let's use string concatenation for dates since they are just date strings (after simple validation)
+            // It's safer to use parameterized queries, so we will build the query carefully.
+
+            $sql = "SELECT s.id AS student_id, s.first_name, s.last_name, s.admission_no, c.name AS class_name,
+                           fee.id AS fee_id, fee.name AS fee_name,
+                           (SELECT COALESCE(SUM(amount), 0) FROM recurring_fee_entries WHERE student_id = s.id AND enrollment_id IN (SELECT id FROM recurring_fee_enrollments WHERE recurring_fee_id = fee.id) AND status != 'waived' $dateFilterEntries) AS total_billed,
+                           (SELECT COALESCE(SUM(amount), 0) FROM recurring_fee_entries WHERE student_id = s.id AND enrollment_id IN (SELECT id FROM recurring_fee_enrollments WHERE recurring_fee_id = fee.id) AND status = 'waived' $dateFilterEntries) AS total_waived,
+                           (SELECT COALESCE(SUM(amount_paid), 0) FROM recurring_fee_payments WHERE student_id = s.id AND recurring_fee_id = fee.id $dateFilterPayments) AS total_paid
+                    FROM students s
+                    JOIN recurring_fee_enrollments rfen ON s.id = rfen.student_id
+                    JOIN recurring_fees fee ON rfen.recurring_fee_id = fee.id
+                    LEFT JOIN classes c ON s.class_id = c.id
+                    WHERE $where
+                    GROUP BY s.id, fee.id
+                    ORDER BY c.name, s.first_name";
+
+            // The parameters order must be: dateFilterEntries (billed), dateFilterEntries (waived), dateFilterPayments, and then $where
+            $finalParams = array_merge($dateFilterParamsEntries, $dateFilterParamsEntries, $dateFilterParamsPayments, $params);
+
+            $rows = $db->fetchAll($sql, $finalParams);
+            
+            $ledger = [];
+            foreach ($rows as $row) {
+                $billed = (float)$row['total_billed'];
+                $paid = (float)$row['total_paid'];
+                $waived = (float)$row['total_waived'];
+                $expected = $billed;
+                
+                $outstanding = max(0, $expected - $paid);
+                $advance = max(0, $paid - $expected);
+
+                // Only include rows where there is some activity (billed > 0 OR paid > 0 OR waived > 0)
+                if ($billed > 0 || $paid > 0 || $waived > 0) {
+                    $row['outstanding_amount'] = $outstanding;
+                    $row['advance_amount'] = $advance;
+                    $ledger[] = $row;
+                }
+            }
+
+            $this->jsonResponse(['success' => true, 'data' => $ledger]);
+            return;
+        }
+
+        $this->jsonResponse(['error' => 'Invalid report type'], 400);
     }
 }
 

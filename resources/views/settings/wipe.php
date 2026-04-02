@@ -221,6 +221,26 @@ ob_start();
                                         <p class="text-gray-500">All historical student promotion and demotion records</p>
                                     </div>
                                 </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="finance_records" name="sections[]" type="checkbox" value="finance_records" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="finance_records" class="font-medium text-gray-700">Finance & Ledger</label>
+                                        <p class="text-gray-500">All expenses, payment requests, expense categories, and cash book records</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="recurring_fees" name="sections[]" type="checkbox" value="recurring_fees" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="recurring_fees" class="font-medium text-gray-700">Recurring Fees</label>
+                                        <p class="text-gray-500">All recurring fee structures, enrollments, billing entries, and related payment records</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         

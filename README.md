@@ -66,7 +66,14 @@ A comprehensive, web-based School Management System designed to streamline admin
 ```
 
 ## Changelog
-### [Current] - 2026-03-11
+### [Current] - 2026-03-15
+- **System Administration**:
+    - **System Wipe Expansion**: Expanded the Super Admin "System Wipe" operation to include clearing Finance Records (Expenses, Cash Book) and Recurring Fees data.
+    - **Access Control Enhancements**: Restricted Fee Structure editing and modification of core student academic details (Admission No, Class, etc.) to Super Admins only.
+    - **Finance Module Updates**: Added a comprehensive "Guardian" column to the Fee Details modal to easily view guardian contact info for bills. Also enhanced the "Student Bills" table list and the "Fee Details" modal with a Guardian column and faint red row highlights for students with outstanding balances. Added a robust feature-complete 'Reports' tab to the Recurring Fees module allowing for filtered viewing and printing of Payments, Waived entries, Advances/Overpayments, and a unified Grand Ledger ("All"), complete with official school letterhead print integration.
+    - **Payment Requests on Behalf**: Empowered Super Admins and Accountants to file Expense Payment Requests natively on behalf of other staff members via a custom built, searchable staff dropdown menu.
+
+### [2.1.0] - 2026-03-11
 - **Recurring Fees Module**:
     - **Management System**: Completely new system for managing recurring subscription-like fees, handling enrollment, automated bill generation, and waivers.
     - **Historical Ledger**: Brought a deeply detailed historical ledger modal to the Pay tab, displaying generated bills, corrections, payments, running balances, and print capabilities.

@@ -128,7 +128,14 @@
                                 ?>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
-                                <?= htmlspecialchars($entry['expense_title'] ?? $entry['request_purpose'] ?? '-') ?>
+                                <div class="flex items-center flex-wrap gap-2">
+                                    <span><?= htmlspecialchars($entry['expense_title'] ?? $entry['request_purpose'] ?? '-') ?></span>
+                                    <?php if ($entry['reference_type'] === 'payment_request' && !empty($entry['staff_first']) && $entry['pr_requested_by'] != $entry['staff_user_id']): ?>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            On behalf of <?= htmlspecialchars($entry['staff_first'] . ' ' . $entry['staff_last']) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             
                             <?php if ($entry['transaction_type'] === 'credit'): ?>

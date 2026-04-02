@@ -103,10 +103,13 @@ class FeeController extends Controller
             $classModel = new ClassModel();
             $classes = $classModel->getAll();
             
+            $isSuperAdmin = $this->hasAnyRole(['super_admin']);
+            
             $this->view('fees/index', [
                 'fees' => $fees,
                 'classes' => $classes,
-                'tab' => 'structures'
+                'tab' => 'structures',
+                'isSuperAdmin' => $isSuperAdmin
             ]);
         }
     }
@@ -188,7 +191,8 @@ class FeeController extends Controller
         $this->view('fees/show', [
             'fee' => $fee,
             'assignedClasses' => $assignedClasses,
-            'assignedStudents' => $assignedStudents
+            'assignedStudents' => $assignedStudents,
+            'isSuperAdmin' => $this->hasAnyRole(['super_admin'])
         ]);
     }
     
@@ -299,6 +303,11 @@ class FeeController extends Controller
             $this->redirect('/login');
         }
         
+        if (!$this->hasAnyRole(['super_admin'])) {
+            $this->flash('error', 'Unauthorized access. Only Super Admins can edit fee structures.');
+            $this->redirect('/fees');
+        }
+        
         $feeModel = new Fee();
         $fee = $feeModel->find($id);
         
@@ -331,6 +340,11 @@ class FeeController extends Controller
         // Check if user is logged in
         if (!isset($_SESSION['user'])) {
             $this->redirect('/login');
+        }
+        
+        if (!$this->hasAnyRole(['super_admin'])) {
+            $this->flash('error', 'Unauthorized access. Only Super Admins can edit fee structures.');
+            $this->redirect('/fees');
         }
         
         if ($this->requestMethod() === 'POST' || $this->requestMethod() === 'PUT') {

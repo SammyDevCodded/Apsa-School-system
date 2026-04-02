@@ -225,9 +225,11 @@ ob_start();
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guardian</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Name</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year/Term</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
@@ -236,7 +238,7 @@ ob_start();
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <?php if (empty($studentBills)): ?>
                                         <tr>
-                                            <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">
                                                 No student bills found
                                             </td>
                                         </tr>
@@ -250,14 +252,19 @@ ob_start();
                                             $totalAmount += $bill['fee_amount'];
                                             $totalPaid += $bill['total_paid'];
                                             $totalBalance += $balance;
+                                            $rowBgClass = $balance > 0 ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50';
                                             ?>
-                                            <tr>
+                                            <tr class="<?= $rowBgClass ?>">
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     <?= date('M d, Y', strtotime($bill['created_at'])) ?>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($bill['first_name'] . ' ' . $bill['last_name']) ?></div>
                                                     <div class="text-sm text-gray-500"><?= htmlspecialchars($bill['admission_no']) ?></div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm text-gray-900"><?= htmlspecialchars($bill['guardian_name'] ?? 'N/A') ?></div>
+                                                    <div class="text-sm text-gray-500"><?= htmlspecialchars($bill['guardian_phone'] ?? 'N/A') ?></div>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     <?= htmlspecialchars($bill['class_name'] ?? 'N/A') ?>
@@ -267,6 +274,10 @@ ob_start();
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <?= ucfirst(str_replace('_', ' ', $bill['fee_type'] ?? '')) ?>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($bill['academic_year_name'] ?? 'N/A') ?></div>
+                                                    <div class="text-sm text-gray-500"><?= htmlspecialchars($bill['term'] ?? 'N/A') ?></div>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     ₵<?= number_format($bill['fee_amount'], 2) ?>
@@ -284,7 +295,7 @@ ob_start();
                                 <?php if (!empty($studentBills)): ?>
                                 <tfoot class="bg-gray-50">
                                     <tr>
-                                        <td colspan="5" class="px-6 py-3 text-sm font-medium text-gray-900" style="text-align: right;">Total</td>
+                                        <td colspan="7" class="px-6 py-3 text-sm font-medium text-gray-900" style="text-align: right;">Total</td>
                                         <td class="px-6 py-3 text-sm font-bold text-gray-900">₵<?= number_format($totalAmount, 2) ?></td>
                                         <td class="px-6 py-3 text-sm font-bold text-gray-900">₵<?= number_format($totalPaid, 2) ?></td>
                                         <td class="px-6 py-3 text-sm font-bold <?= $totalBalance > 0 ? 'text-red-600' : 'text-green-600' ?>">₵<?= number_format($totalBalance, 2) ?></td>
@@ -1476,7 +1487,9 @@ document.addEventListener('click', function(e) {
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guardian</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year (Term)</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Amount</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Paid</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
@@ -1495,13 +1508,18 @@ document.addEventListener('click', function(e) {
                     totalBalance += parseFloat(student.balance) || 0;
                     
                     html += `
-                        <tr>
+                        <tr class="${student.balance > 0 ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(student.assigned_date).toLocaleDateString()}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">${student.first_name || ''} ${student.last_name || ''}</div>
                                 <div class="text-sm text-gray-500">${student.admission_no || ''}</div>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">${student.guardian_name || 'N/A'}</div>
+                                <div class="text-sm text-gray-500">${student.guardian_phone || 'N/A'}</div>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.class_name || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${academicYear} (${term})</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.fee_amount || 0).toFixed(2)}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₵${parseFloat(student.total_paid || 0).toFixed(2)}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm ${student.balance > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
@@ -1515,7 +1533,7 @@ document.addEventListener('click', function(e) {
                             </tbody>
                             <tfoot class="bg-gray-50">
                                 <tr>
-                                    <td class="px-6 py-3 text-sm font-medium text-gray-900" colspan="3">Total</td>
+                                    <td class="px-6 py-3 text-sm font-medium text-gray-900" colspan="5">Total</td>
                                     <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalExpected.toFixed(2)}</td>
                                     <td class="px-6 py-3 text-sm font-bold text-gray-900">₵${totalPaid.toFixed(2)}</td>
                                     <td class="px-6 py-3 text-sm font-bold ${totalBalance > 0 ? 'text-red-600' : 'text-green-600'}">₵${totalBalance.toFixed(2)}</td>
@@ -1554,6 +1572,8 @@ document.addEventListener('click', function(e) {
                                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                                         th { background-color: #f2f2f2; }
                                         .total-row { font-weight: bold; }
+                                        .bg-red-50\\/60 { background-color: rgba(254, 242, 242, 0.6) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                        .hover\\:bg-red-50 { /* handled by the base bg class for print */ }
                                     </style>
                                 </head>
                                 <body>
@@ -2367,6 +2387,8 @@ if (printStudentBillsBtn) {
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                         th { background-color: #f2f2f2; }
                         tfoot td { font-weight: bold; background-color: #f9fafb; font-size: 14px; }
+                        .bg-red-50\\/60 { background-color: rgba(254, 242, 242, 0.6) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .hover\\:bg-red-50 { /* handled by the base bg class for print */ }
                     </style>
                 </head>
                 <body>

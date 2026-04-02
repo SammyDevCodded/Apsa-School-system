@@ -134,9 +134,11 @@ $activeTab = $_GET['tab'] ?? 'structures';
                                         <button type="button" onclick="viewFeeStructure(<?= $fee['id'] ?>)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             View
                                         </button>
+                                        <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                                         <a href="/fees/<?= $fee['id'] ?>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             Edit
                                         </a>
+                                        <?php endif; ?>
                                         <a href="/fees/<?= $fee['id'] ?>/assign" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             Assign
                                         </a>
@@ -422,9 +424,11 @@ $activeTab = $_GET['tab'] ?? 'structures';
                 <div class="flex justify-between items-center mb-4 flex-shrink-0">
                     <h3 class="text-xl font-medium text-gray-900">Fee Structure Details</h3>
                     <div class="flex items-center gap-2">
+                        <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                         <a id="modal-fee-edit-link" href="#" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                             Edit
                         </a>
+                        <?php endif; ?>
                         <button onclick="document.getElementById('view-fee-structure-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-500">
                             <span class="text-2xl">&times;</span>
                         </button>

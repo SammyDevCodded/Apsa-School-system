@@ -8,9 +8,11 @@ ob_start();
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-semibold text-gray-900">Fee Structure Details</h1>
             <div>
+                <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                 <a href="/fees/<?= $fee['id'] ?>/edit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 mr-2">
                     Edit
                 </a>
+                <?php endif; ?>
                 <a href="/fees/<?= $fee['id'] ?>/assign" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 mr-2">
                     Assign Students
                 </a>
@@ -28,9 +30,11 @@ ob_start();
                     <h3 class="text-lg leading-6 font-medium text-gray-900">
                         Fee Structure Details
                     </h3>
+                    <?php if (isset($isSuperAdmin) && $isSuperAdmin): ?>
                     <a href="/fees/<?= $fee['id'] ?>/edit" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Edit
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="border-t border-gray-200">

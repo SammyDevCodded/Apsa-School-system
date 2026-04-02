@@ -14,7 +14,7 @@ class PaymentRequest {
         $sql = "SELECT pr.*, 
                 rq_u.first_name as rq_first, rq_u.last_name as rq_last,
                 ap_u.first_name as ap_first, ap_u.last_name as ap_last,
-                s.first_name as staff_first, s.last_name as staff_last
+                s.first_name as staff_first, s.last_name as staff_last, s.user_id as staff_user_id
                 FROM payment_requests pr 
                 LEFT JOIN users rq_u ON pr.requested_by = rq_u.id
                 LEFT JOIN users ap_u ON pr.approved_by = ap_u.id
@@ -43,7 +43,7 @@ class PaymentRequest {
             SELECT pr.*, 
                 rq_u.first_name as rq_first, rq_u.last_name as rq_last,
                 ap_u.first_name as ap_first, ap_u.last_name as ap_last,
-                s.first_name as staff_first, s.last_name as staff_last
+                s.first_name as staff_first, s.last_name as staff_last, s.user_id as staff_user_id
             FROM payment_requests pr 
             LEFT JOIN users rq_u ON pr.requested_by = rq_u.id
             LEFT JOIN users ap_u ON pr.approved_by = ap_u.id

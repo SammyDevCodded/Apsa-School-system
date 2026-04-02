@@ -1261,8 +1261,10 @@ class SettingsController extends Controller
                 return $classModel->executeRaw($sql);
                 
             case 'fees':
-                // Wipe fee data
+                // Wipe fee data (and assignments)
                 $feeModel = new \App\Models\Fee();
+                $feeAssignmentModel = new \App\Models\FeeAssignment();
+                $feeAssignmentModel->executeRaw("DELETE FROM fee_assignments");
                 $sql = "DELETE FROM fees";
                 return $feeModel->executeRaw($sql);
                 
@@ -1343,6 +1345,32 @@ class SettingsController extends Controller
                 // Wipe student promotions history
                 $sql = "DELETE FROM student_promotions";
                 return $this->settingModel->executeRaw($sql);
+                
+            case 'finance_records':
+                // Wipe finance records (expenses, payment requests, cash book)
+                $expenseModel = new \App\Models\Expense();
+                $expenseCategoryModel = new \App\Models\ExpenseCategory();
+                $paymentRequestModel = new \App\Models\PaymentRequest();
+                $cashBookModel = new \App\Models\CashBook();
+                
+                $paymentRequestModel->executeRaw("DELETE FROM payment_requests");
+                $expenseModel->executeRaw("DELETE FROM expenses");
+                $expenseCategoryModel->executeRaw("DELETE FROM expense_categories");
+                $sql = "DELETE FROM cash_book";
+                return $cashBookModel->executeRaw($sql);
+                
+            case 'recurring_fees':
+                // Wipe recurring fees records
+                $recurringFeeModel = new \App\Models\RecurringFee();
+                $enrollmentModel = new \App\Models\RecurringFeeEnrollment();
+                $entryModel = new \App\Models\RecurringFeeEntry();
+                $paymentModel = new \App\Models\RecurringFeePayment();
+                
+                $paymentModel->executeRaw("DELETE FROM recurring_fee_payments");
+                $entryModel->executeRaw("DELETE FROM recurring_fee_entries");
+                $enrollmentModel->executeRaw("DELETE FROM recurring_fee_enrollments");
+                $sql = "DELETE FROM recurring_fees";
+                return $recurringFeeModel->executeRaw($sql);
                 
             default:
                 return false;

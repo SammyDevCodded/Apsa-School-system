@@ -21,10 +21,13 @@ class CashBook {
     public function getLedgerWithDetails($filters = [], $search = '', $limit = 50, $offset = 0) {
         $sql = "SELECT cb.*, 
                        e.title as expense_title, 
-                       pr.purpose as request_purpose
+                       pr.purpose as request_purpose,
+                       s.first_name as staff_first, s.last_name as staff_last, s.user_id as staff_user_id,
+                       pr.requested_by as pr_requested_by
                 FROM cash_book cb
                 LEFT JOIN expenses e ON cb.reference_type = 'expense' AND cb.reference_id = e.id
                 LEFT JOIN payment_requests pr ON cb.reference_type = 'payment_request' AND cb.reference_id = pr.id
+                LEFT JOIN staff s ON pr.staff_id = s.id
                 WHERE 1=1";
                 
         $params = [];

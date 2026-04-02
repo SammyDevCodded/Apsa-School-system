@@ -40,7 +40,7 @@ class FeeAssignment extends Model
      */
     public function getByFeeId($feeId)
     {
-        $sql = "SELECT fa.*, s.first_name, s.last_name, s.admission_no, s.class_id, c.name as class_name, f.amount as fee_amount, f.type as fee_type, f.name as fee_name, fa.created_at as assigned_date
+        $sql = "SELECT fa.*, s.first_name, s.last_name, s.admission_no, s.class_id, s.guardian_name, s.guardian_phone, c.name as class_name, f.amount as fee_amount, f.type as fee_type, f.name as fee_name, fa.created_at as assigned_date
                 FROM {$this->table} fa
                 LEFT JOIN students s ON fa.student_id = s.id
                 LEFT JOIN classes c ON s.class_id = c.id
@@ -262,8 +262,9 @@ class FeeAssignment extends Model
 
         // Main Query
         $sql = "SELECT fa.*, 
-                       s.first_name, s.last_name, s.admission_no, c.name as class_name,
-                       f.name as fee_name, f.type as fee_type,
+                       s.first_name, s.last_name, s.admission_no, s.guardian_name, s.guardian_phone, c.name as class_name,
+                       f.name as fee_name, f.type as fee_type, f.term, 
+                       ay.name as academic_year_name,
                        COALESCE(fa.custom_amount, f.amount) as fee_amount,
                        f.amount as original_fee_amount,
                        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.student_id = fa.student_id AND p.fee_id = fa.fee_id) as total_paid
@@ -271,6 +272,7 @@ class FeeAssignment extends Model
                 JOIN students s ON fa.student_id = s.id
                 LEFT JOIN classes c ON s.class_id = c.id
                 JOIN fees f ON fa.fee_id = f.id
+                LEFT JOIN academic_years ay ON f.academic_year_id = ay.id
                 $whereClause
                 ORDER BY fa.created_at DESC
                 LIMIT " . (int)$offset . ", " . (int)$perPage;

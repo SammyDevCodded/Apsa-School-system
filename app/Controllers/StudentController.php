@@ -452,13 +452,16 @@ class StudentController extends Controller
         
         $formatDescription = IdGeneratorHelper::getAdmissionFormatDescription();
         
+        $isSuperAdmin = $this->hasAnyRole(['super_admin']);
+        
         if ($this->isAjaxRequest()) {
             // For AJAX requests, only render the form content without the layout
             $this->view('students/partials/edit_form', [
                 'student' => $student,
                 'classes' => $classes,
                 'formatDescription' => $formatDescription,
-                'currentAcademicYear' => $currentAcademicYear
+                'currentAcademicYear' => $currentAcademicYear,
+                'isSuperAdmin' => $isSuperAdmin
             ]);
         } else {
             // For regular requests, render the full page
@@ -466,7 +469,8 @@ class StudentController extends Controller
                 'student' => $student,
                 'classes' => $classes,
                 'formatDescription' => $formatDescription,
-                'currentAcademicYear' => $currentAcademicYear
+                'currentAcademicYear' => $currentAcademicYear,
+                'isSuperAdmin' => $isSuperAdmin
             ]);
         }
     }
@@ -485,34 +489,34 @@ class StudentController extends Controller
         
         if ($this->requestMethod() === 'POST' || $this->requestMethod() === 'PUT') {
             
+            $isSuperAdmin = $this->hasAnyRole(['super_admin']);
+            
             $data = [
-                'admission_no' => $this->post('admission_no'),
                 'first_name' => $this->post('first_name'),
                 'last_name' => $this->post('last_name'),
                 'dob' => $this->post('dob'),
                 'gender' => $this->post('gender'),
-                'class_id' => $this->post('class_id'),
                 'guardian_name' => $this->post('guardian_name'),
                 'guardian_phone' => $this->post('guardian_phone'),
                 'address' => $this->post('address'),
                 'medical_info' => $this->post('medical_info'),
                 'student_category' => $this->post('student_category', 'regular_day'),
-                'student_category_details' => $this->post('student_category_details'),
-                'admission_date' => $this->post('admission_date')
-                // Note: academic_year_id is not included here to preserve existing value
+                'student_category_details' => $this->post('student_category_details')
             ];
             
-            // Handle academic_year_id - if provided, use it; if empty string, set to NULL
-            $academicYearId = $this->post('academic_year_id');
-            if ($academicYearId !== null && $academicYearId !== '' && $academicYearId !== '0') {
-                $data['academic_year_id'] = $academicYearId;
-            } else if ($academicYearId === '' || $academicYearId === '0') {
-                // Explicitly set to null if empty string or '0' is provided
-                $data['academic_year_id'] = null;
-            } else {
-                // If academic_year_id is not provided in the form at all, don't include it in the update data
-                // This preserves the existing value in the database
-                unset($data['academic_year_id']);
+            if ($isSuperAdmin) {
+                $data['admission_no'] = $this->post('admission_no');
+                $data['class_id'] = $this->post('class_id');
+                $data['admission_date'] = $this->post('admission_date');
+                
+                // Handle academic_year_id - if provided, use it; if empty string, set to NULL
+                $academicYearId = $this->post('academic_year_id');
+                if ($academicYearId !== null && $academicYearId !== '' && $academicYearId !== '0') {
+                    $data['academic_year_id'] = $academicYearId;
+                } else if ($academicYearId === '' || $academicYearId === '0') {
+                    // Explicitly set to null if empty string or '0' is provided
+                    $data['academic_year_id'] = null;
+                }
             }
             
             // Handle profile picture upload
@@ -532,7 +536,12 @@ class StudentController extends Controller
             }
             
             // Basic validation
-            $requiredFields = ['admission_no' => 'Admission number', 'first_name' => 'First name', 'last_name' => 'Last name', 'dob' => 'Date of birth', 'gender' => 'Gender', 'class_id' => 'Class', 'guardian_phone' => 'Guardian phone'];
+            $requiredFields = ['first_name' => 'First name', 'last_name' => 'Last name', 'dob' => 'Date of birth', 'gender' => 'Gender', 'guardian_phone' => 'Guardian phone'];
+            if ($isSuperAdmin) {
+                $requiredFields['admission_no'] = 'Admission number';
+                $requiredFields['class_id'] = 'Class';
+            }
+            
             $missingFields = [];
             foreach ($requiredFields as $field => $label) {
                 if (empty($data[$field])) {
@@ -592,7 +601,7 @@ class StudentController extends Controller
             
             if ($result !== false) {
                 // If class changed, auto-assign the new class fees
-                if (isset($student['class_id']) && $student['class_id'] != $data['class_id']) {
+                if ($isSuperAdmin && isset($student['class_id']) && $student['class_id'] != $data['class_id']) {
                     $feeModel = new \App\Models\Fee();
                     $classFees = $feeModel->getFeesByClassId($data['class_id']);
                     
