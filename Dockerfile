@@ -35,8 +35,8 @@ RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 RUN mkdir -p storage/uploads storage/backups storage/logs storage/framework/views storage/framework/cache && \
     chmod -R 777 storage
 
-# Create a startup script
+# Create a startup script and fix Windows CRLF line endings
 COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+RUN sed -i -e 's/\r$//' /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
 
 CMD ["/usr/local/bin/start.sh"]
