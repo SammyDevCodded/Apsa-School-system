@@ -5,7 +5,7 @@ if (!defined('ROOT_PATH')) {
 }
 
 // Database configuration
-define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
+define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: '127.0.0.1'));
 define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'school_erp'));
 define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
 define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQLPASSWORD') ?: ''));
